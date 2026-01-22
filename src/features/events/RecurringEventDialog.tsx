@@ -13,11 +13,12 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { TimePicker } from '@/components/ui/time-picker'
+import { DatePicker } from '@/components/ui/date-picker'
 import { ColorPicker } from '@/components/ui/color-picker'
-import { Trash2, ChevronDown } from 'lucide-react'
+import { Trash2, ChevronDown, CalendarOff } from 'lucide-react'
 import { useTimelineStore } from '@/store/timelineStore'
 import { useUIStore } from '@/store/uiStore'
-import { isValidTimeString } from '@/utils/date'
+import { isValidTimeString, getTodayString, parseToDate } from '@/utils/date'
 import { cn } from '@/utils/cn'
 import { toast } from 'sonner'
 import type { DayOfWeek, EventColor } from '@/types'
@@ -46,15 +47,19 @@ export function RecurringEventDialog() {
 
   const [title, setTitle] = useState('')
   const [time, setTime] = useState('')
+  const [endTime, setEndTime] = useState('')
   const [description, setDescription] = useState('')
   const [color, setColor] = useState<EventColor | undefined>(undefined)
   const [enabledDays, setEnabledDays] = useState<DayOfWeek[]>([0, 1, 2, 3, 4, 5, 6])
+  const [repeatUntil, setRepeatUntil] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   // Collapsible sections state
   const [showTime, setShowTime] = useState(false)
+  const [showEndTime, setShowEndTime] = useState(false)
   const [showDescription, setShowDescription] = useState(false)
   const [showColor, setShowColor] = useState(false)
+  const [showRepeatUntil, setShowRepeatUntil] = useState(false)
 
   // Load existing recurring event data when editing
   useEffect(() => {
@@ -63,25 +68,33 @@ export function RecurringEventDialog() {
       if (event) {
         setTitle(event.title)
         setTime(event.time || '')
+        setEndTime(event.endTime || '')
         setDescription(event.description || '')
         setColor(event.color)
         setEnabledDays(event.enabledDays)
+        setRepeatUntil(event.repeatUntil || '')
         // Expand sections if they have data
         setShowTime(!!event.time)
+        setShowEndTime(!!event.endTime)
         setShowDescription(!!event.description)
         setShowColor(!!event.color)
+        setShowRepeatUntil(!!event.repeatUntil)
       }
     } else {
       // Reset form for new recurring event
       setTitle('')
       setTime('')
+      setEndTime('')
       setDescription('')
       setColor(undefined)
       setEnabledDays([0, 1, 2, 3, 4, 5, 6]) // All days enabled by default
+      setRepeatUntil('')
       // Collapse sections for new events
       setShowTime(false)
+      setShowEndTime(false)
       setShowDescription(false)
       setShowColor(false)
+      setShowRepeatUntil(false)
     }
   }, [editingRecurringEventId, recurringEvents])
 
@@ -109,7 +122,17 @@ export function RecurringEventDialog() {
       }
 
       if (time && !isValidTimeString(time)) {
-        toast.error('Invalid time format. Use HH:mm')
+        toast.error('Invalid start time format. Use HH:mm')
+        return
+      }
+
+      if (endTime && !isValidTimeString(endTime)) {
+        toast.error('Invalid end time format. Use HH:mm')
+        return
+      }
+
+      if (time && endTime && endTime <= time) {
+        toast.error('End time must be after start time')
         return
       }
 
@@ -126,9 +149,11 @@ export function RecurringEventDialog() {
           updateRecurringEvent(editingRecurringEventId, {
             title: title.trim(),
             time: time || undefined,
+            endTime: endTime || undefined,
             description: description.trim() || undefined,
             color,
             enabledDays,
+            repeatUntil: repeatUntil || undefined,
           })
           toast.success('Recurring event updated')
         } else {
@@ -136,9 +161,11 @@ export function RecurringEventDialog() {
           addRecurringEvent({
             title: title.trim(),
             time: time || undefined,
+            endTime: endTime || undefined,
             description: description.trim() || undefined,
             color,
             enabledDays,
+            repeatUntil: repeatUntil || undefined,
           })
           toast.success('Recurring event added')
         }
@@ -153,9 +180,11 @@ export function RecurringEventDialog() {
     [
       title,
       time,
+      endTime,
       description,
       color,
       enabledDays,
+      repeatUntil,
       editingRecurringEventId,
       addRecurringEvent,
       updateRecurringEvent,
@@ -224,7 +253,7 @@ export function RecurringEventDialog() {
                   !showTime && '-rotate-90'
                 )} 
               />
-              Time (optional)
+              Start Time (optional)
             </button>
             <AnimatePresence>
               {showTime && (
@@ -238,12 +267,51 @@ export function RecurringEventDialog() {
                   <TimePicker
                     value={time}
                     onChange={setTime}
-                    placeholder="Select time"
+                    placeholder="Select start time"
                   />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
+
+          {/* Collapsible End Time - only show when start time is set */}
+          {time && (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowEndTime(!showEndTime)}
+                className={cn(
+                  'flex items-center gap-2 text-sm font-medium w-full text-left',
+                  'text-muted-foreground hover:text-foreground transition-colors'
+                )}
+              >
+                <ChevronDown 
+                  className={cn(
+                    'h-4 w-4 transition-transform duration-200',
+                    !showEndTime && '-rotate-90'
+                  )} 
+                />
+                End Time (optional)
+              </button>
+              <AnimatePresence>
+                {showEndTime && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <TimePicker
+                      value={endTime}
+                      onChange={setEndTime}
+                      placeholder="Select end time"
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">
@@ -341,6 +409,50 @@ export function RecurringEventDialog() {
                 >
                   <div className="pt-2 pb-1">
                     <ColorPicker value={color} onChange={setColor} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Collapsible Repeat Until */}
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setShowRepeatUntil(!showRepeatUntil)}
+              className={cn(
+                'flex items-center gap-2 text-sm font-medium w-full text-left',
+                'text-muted-foreground hover:text-foreground transition-colors'
+              )}
+            >
+              <ChevronDown 
+                className={cn(
+                  'h-4 w-4 transition-transform duration-200',
+                  !showRepeatUntil && '-rotate-90'
+                )} 
+              />
+              <CalendarOff className="h-4 w-4" />
+              Repeat Until (optional)
+            </button>
+            <AnimatePresence>
+              {showRepeatUntil && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-1">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Leave empty to repeat forever
+                    </p>
+                    <DatePicker
+                      value={repeatUntil}
+                      onChange={setRepeatUntil}
+                      placeholder="Select end date"
+                      minDate={parseToDate(getTodayString())}
+                    />
                   </div>
                 </motion.div>
               )}

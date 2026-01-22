@@ -20,7 +20,8 @@ import {
   Clock,
   Pencil,
   Download,
-  Upload
+  Upload,
+  Sunrise
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -46,6 +47,9 @@ export function QuickAdd() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [dateRange, setDateRange] = useState<DateRangeValue>({})
+  const [selectedColorFilter, setSelectedColorFilter] = useState<string | null>(null)
+  const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
+  const [showFilters, setShowFilters] = useState(false)
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set())
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
   const inputRef = useRef<HTMLInputElement>(null)
@@ -57,6 +61,7 @@ export function QuickAdd() {
   const getAllDatesWithEvents = useTimelineStore((state) => state.getAllDatesWithEvents)
   const eventsByDate = useTimelineStore((state) => state.eventsByDate)
   const recurringEvents = useTimelineStore((state) => state.recurringEvents)
+  const tags = useTimelineStore((state) => state.tags)
   const todos = useTodoStore((state) => state.todos)
   
   const { 
@@ -72,6 +77,7 @@ export function QuickAdd() {
     toggleTheme,
     openRecurringEventDialog,
     openTodoPanel,
+    openTodayWidget,
   } = useUIStore()
 
   // Get dates with events for search
@@ -95,26 +101,41 @@ export function QuickAdd() {
     })
   }, [allDatesWithEvents, dateRange])
   
-  // Get search results and filter by date range
+  // Get search results and filter by date range, color, and tags
   const allSearchResults = searchInput ? searchEvents(searchInput) : []
   const searchResults = useMemo(() => {
-    if (!dateRange.from && !dateRange.to) {
-      return allSearchResults.slice(0, 5)
+    let filtered = allSearchResults
+    
+    // Filter by date range
+    if (dateRange.from || dateRange.to) {
+      filtered = filtered.filter(({ date }) => {
+        if (dateRange.from && dateRange.to) {
+          return date >= dateRange.from && date <= dateRange.to
+        } else if (dateRange.from) {
+          return date >= dateRange.from
+        }
+        return true
+      })
     }
     
-    const filtered = allSearchResults.filter(({ date }) => {
-      if (dateRange.from && dateRange.to) {
-        // Both dates selected - filter by range
-        return date >= dateRange.from && date <= dateRange.to
-      } else if (dateRange.from) {
-        // Only from date selected
-        return date >= dateRange.from
-      }
-      return true
-    })
+    // Filter by color
+    if (selectedColorFilter) {
+      filtered = filtered.filter(({ event }) => event.color === selectedColorFilter)
+    }
     
-    return filtered.slice(0, 5)
-  }, [allSearchResults, dateRange])
+    // Filter by tags
+    if (selectedTagFilters.length > 0) {
+      filtered = filtered.filter(({ event }) => {
+        if (!event.tags || event.tags.length === 0) return false
+        return selectedTagFilters.some(tagId => event.tags?.includes(tagId))
+      })
+    }
+    
+    return filtered.slice(0, 10) // Show more results when filtering
+  }, [allSearchResults, dateRange, selectedColorFilter, selectedTagFilters])
+  
+  // Check if any filters are active
+  const hasActiveFilters = dateRange.from || dateRange.to || selectedColorFilter || selectedTagFilters.length > 0
 
   // Global keyboard shortcut
   useEffect(() => {
@@ -198,6 +219,11 @@ export function QuickAdd() {
 
   const handleOpenTodoPanel = () => {
     openTodoPanel()
+    setIsMenuOpen(false)
+  }
+
+  const handleOpenTodayWidget = () => {
+    openTodayWidget()
     setIsMenuOpen(false)
   }
 
@@ -381,22 +407,149 @@ export function QuickAdd() {
                     />
                   </div>
                   
-                  {/* Quick actions */}
-                  <div className="flex gap-2 mt-2">
+                  {/* Filter toggle and quick actions */}
+                  <div className="flex items-center justify-between gap-2 mt-2">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { navigateToToday(); setIsSearchOpen(false) }}
+                        className="text-xs"
+                      >
+                        Today
+                      </Button>
+                      {datesWithEvents.length > 0 && (
+                        <span className="text-xs text-muted-foreground flex items-center">
+                          {datesWithEvents.length} days with events
+                        </span>
+                      )}
+                    </div>
                     <Button
-                      variant="ghost"
+                      variant={showFilters || hasActiveFilters ? 'outline' : 'ghost'}
                       size="sm"
-                      onClick={() => { navigateToToday(); setIsSearchOpen(false) }}
-                      className="text-xs"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={cn(
+                        'text-xs gap-1',
+                        hasActiveFilters && 'border-accent text-accent'
+                      )}
                     >
-                      Today
+                      <Layers className="h-3 w-3" />
+                      Filters
+                      {hasActiveFilters && (
+                        <span className="ml-1 px-1.5 py-0.5 bg-accent text-accent-foreground rounded-full text-[10px]">
+                          {(selectedColorFilter ? 1 : 0) + selectedTagFilters.length + (dateRange.from ? 1 : 0)}
+                        </span>
+                      )}
                     </Button>
-                    {datesWithEvents.length > 0 && (
-                      <span className="text-xs text-muted-foreground flex items-center">
-                        {datesWithEvents.length} days with events
-                      </span>
-                    )}
                   </div>
+                  
+                  {/* Expanded Filters */}
+                  <AnimatePresence>
+                    {showFilters && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-3 mt-3 border-t space-y-3">
+                          {/* Color filter */}
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                              Filter by color
+                            </label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'gray'] as const).map((color) => (
+                                <button
+                                  key={color}
+                                  type="button"
+                                  onClick={() => setSelectedColorFilter(selectedColorFilter === color ? null : color)}
+                                  className={cn(
+                                    'w-6 h-6 rounded-full transition-all border-2',
+                                    selectedColorFilter === color 
+                                      ? 'ring-2 ring-offset-2 ring-offset-background border-background'
+                                      : 'border-transparent hover:scale-110'
+                                  )}
+                                  style={{ 
+                                    backgroundColor: getEventColor(color),
+                                    // @ts-expect-error CSS custom property for ring color
+                                    '--tw-ring-color': getEventColor(color),
+                                  }}
+                                />
+                              ))}
+                              {selectedColorFilter && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => setSelectedColorFilter(null)}
+                                  className="h-6 w-6"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Tag filter */}
+                          {tags.length > 0 && (
+                            <div>
+                              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                                Filter by tags
+                              </label>
+                              <div className="flex flex-wrap gap-1.5">
+                                {tags.map((tag) => {
+                                  const isSelected = selectedTagFilters.includes(tag.id)
+                                  return (
+                                    <button
+                                      key={tag.id}
+                                      type="button"
+                                      onClick={() => {
+                                        if (isSelected) {
+                                          setSelectedTagFilters(selectedTagFilters.filter(id => id !== tag.id))
+                                        } else {
+                                          setSelectedTagFilters([...selectedTagFilters, tag.id])
+                                        }
+                                      }}
+                                      className={cn(
+                                        'text-xs px-2 py-1 rounded-full border transition-all',
+                                        isSelected
+                                          ? 'border-transparent'
+                                          : 'border-border hover:border-accent/50'
+                                      )}
+                                      style={{
+                                        backgroundColor: isSelected ? getEventColor(tag.color) + '20' : undefined,
+                                        color: isSelected ? getEventColor(tag.color) : undefined,
+                                        borderColor: isSelected ? getEventColor(tag.color) : undefined,
+                                      }}
+                                    >
+                                      {tag.name}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Clear all filters */}
+                          {hasActiveFilters && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setDateRange({})
+                                setSelectedColorFilter(null)
+                                setSelectedTagFilters([])
+                              }}
+                              className="text-xs text-muted-foreground hover:text-foreground w-full"
+                            >
+                              Clear all filters
+                            </Button>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
                 
                 {/* Results */}
@@ -528,10 +681,24 @@ export function QuickAdd() {
                   {searchInput && searchResults.length === 0 && (
                     <div className="p-8 text-center">
                       <p className="text-sm text-muted-foreground">
-                        {dateRange.from || dateRange.to 
-                          ? 'No events found in selected date range' 
+                        {hasActiveFilters 
+                          ? 'No events found matching filters' 
                           : 'No events found'}
                       </p>
+                      {hasActiveFilters && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setDateRange({})
+                            setSelectedColorFilter(null)
+                            setSelectedTagFilters([])
+                          }}
+                          className="mt-2 text-xs"
+                        >
+                          Clear filters
+                        </Button>
+                      )}
                     </div>
                   )}
                   
@@ -834,6 +1001,17 @@ export function QuickAdd() {
                     Recurring Event
                   </Button>
 
+                  {/* Today Widget */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleOpenTodayWidget}
+                    className="w-full justify-start gap-2 font-normal"
+                  >
+                    <Sunrise className="h-4 w-4" />
+                    Today
+                  </Button>
+
                   {/* Todo List */}
                   <Button
                     variant="ghost"
@@ -854,7 +1032,7 @@ export function QuickAdd() {
                   >
                     <Search className="h-4 w-4" />
                     Search
-                    <kbd className="ml-auto text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    <kbd className="hidden sm:inline ml-auto text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                       ⌘K
                     </kbd>
                   </Button>
@@ -972,8 +1150,8 @@ export function QuickAdd() {
             />
           </div>
 
-          {/* Keyboard hint */}
-          <div className="flex items-center justify-center gap-3 mt-2 text-[10px] text-muted-foreground">
+          {/* Keyboard hint - hidden on mobile */}
+          <div className="hidden sm:flex items-center justify-center gap-3 mt-2 text-[10px] text-muted-foreground">
             <span>
               Press <kbd className="px-1 py-0.5 rounded border bg-muted font-mono text-[9px]">/</kbd> to focus
             </span>

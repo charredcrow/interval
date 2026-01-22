@@ -8,14 +8,33 @@
 export type EventColor = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' | 'gray'
 
 /**
+ * Reminder time options (minutes before event)
+ */
+export type ReminderTime = 0 | 5 | 10 | 15 | 30 | 60 | 120 | 1440 // 0 = at time, 1440 = 1 day
+
+/**
+ * Event tag/category
+ */
+export type EventTag = {
+  id: string
+  name: string
+  color: EventColor
+}
+
+/**
  * Represents a single event in the timeline
  */
 export type Event = {
   id: string
   title: string
   description?: string
-  time?: string // Format: "HH:mm"
+  time?: string // Format: "HH:mm" - start time
+  endDate?: string // Format: "YYYY-MM-DD" - optional end date for multi-day events
+  endTime?: string // Format: "HH:mm" - optional end time
   color?: EventColor // Optional color tag
+  tags?: string[] // Array of tag IDs
+  reminder?: ReminderTime // Minutes before event to remind
+  reminderSent?: boolean // Whether reminder has been sent
   createdAt: string // ISO date string
 }
 
@@ -74,8 +93,12 @@ export type RecurringEvent = {
   title: string
   description?: string
   time?: string // Format: "HH:mm"
+  endTime?: string // Format: "HH:mm" - optional end time
   color?: EventColor // Optional color tag
+  tags?: string[] // Array of tag IDs
   enabledDays: DayOfWeek[] // Which days of the week this event is active
+  repeatUntil?: string // Format: "YYYY-MM-DD" - optional end date for recurring
+  reminder?: ReminderTime // Minutes before event to remind
   createdAt: string // ISO date string
 }
 

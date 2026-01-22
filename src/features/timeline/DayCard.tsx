@@ -1,4 +1,4 @@
-import { memo, forwardRef, useMemo } from 'react'
+import { memo, forwardRef, useMemo, useCallback, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -6,6 +6,7 @@ import { EventList } from '@/features/events/EventList'
 import { RecurringEventCard } from '@/features/events/RecurringEventCard'
 import { useTimelineStore } from '@/store/timelineStore'
 import { useUIStore } from '@/store/uiStore'
+import { useDragStore } from '@/store/dragStore'
 import {
   formatDayNumber,
   formatMonthShort,
@@ -31,6 +32,8 @@ export const DayCard = memo(
     { date, className, ...props },
     ref
   ) {
+    const [isDragOver, setIsDragOver] = useState(false)
+    
     const events: Event[] = useTimelineStore(
       (state) => state.eventsByDate[date] ?? EMPTY_EVENTS
     )
@@ -39,9 +42,14 @@ export const DayCard = memo(
     )
     const deleteEvent = useTimelineStore((state) => state.deleteEvent)
     const deleteRecurringEvent = useTimelineStore((state) => state.deleteRecurringEvent)
+    const moveEvent = useTimelineStore((state) => state.moveEvent)
     const undoDelete = useTimelineStore((state) => state.undoDelete)
     const openEventDialog = useUIStore((state) => state.openEventDialog)
     const openRecurringEventDialog = useUIStore((state) => state.openRecurringEventDialog)
+    
+    const draggedEvent = useDragStore((state) => state.draggedEvent)
+    const setDropTarget = useDragStore((state) => state.setDropTarget)
+    const endDrag = useDragStore((state) => state.endDrag)
 
     const isToday = useMemo(() => isDateToday(date), [date])
     const dayNumber = useMemo(() => formatDayNumber(date), [date])
@@ -86,6 +94,33 @@ export const DayCard = memo(
       toast.success('Recurring event deleted')
     }
 
+    // Drag and drop handlers
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      if (draggedEvent && draggedEvent.fromDate !== date) {
+        setIsDragOver(true)
+        setDropTarget(date)
+      }
+    }, [draggedEvent, date, setDropTarget])
+
+    const handleDragLeave = useCallback(() => {
+      setIsDragOver(false)
+      setDropTarget(null)
+    }, [setDropTarget])
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragOver(false)
+      
+      if (draggedEvent && draggedEvent.fromDate !== date) {
+        moveEvent(draggedEvent.fromDate, date, draggedEvent.eventId)
+        toast.success('Event moved')
+      }
+      
+      endDrag()
+    }, [draggedEvent, date, moveEvent, endDrag])
+
     // Calculate event summary
     const eventCount = events.length
     const recurringCount = recurringEvents.length
@@ -99,10 +134,14 @@ export const DayCard = memo(
       <div
         ref={ref}
         className={cn(
-          'pl-12 sm:pl-16 pr-4 pt-4 pb-6 relative',
+          'pl-12 sm:pl-16 pr-4 pt-4 pb-6 relative transition-colors duration-200',
           isToday && 'bg-primary/5',
+          isDragOver && 'bg-accent/10 ring-2 ring-accent/30 ring-inset',
           className
         )}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         {...props}
       >
         {/* Today indicator line */}

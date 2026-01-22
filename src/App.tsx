@@ -7,11 +7,17 @@ import { TimelineView } from '@/features/timeline'
 import { MonthView } from '@/features/month-view'
 import { EventDialog, RecurringEventDialog } from '@/features/events'
 import { TodoPanel } from '@/features/todos'
+import { TodayWidget } from '@/features/today'
 import { useUIStore } from '@/store/uiStore'
+import { useTimelineStore } from '@/store/timelineStore'
+import { startNotificationScheduler, stopNotificationScheduler, getNotificationPermission } from '@/utils/notifications'
 
 function App() {
   const viewMode = useUIStore((state) => state.viewMode)
   const theme = useUIStore((state) => state.theme)
+  const eventsByDate = useTimelineStore((state) => state.eventsByDate)
+  const getRecurringEventsForDate = useTimelineStore((state) => state.getRecurringEventsForDate)
+  const markReminderSent = useTimelineStore((state) => state.markReminderSent)
 
   // Apply theme on mount and when it changes
   useEffect(() => {
@@ -22,6 +28,25 @@ function App() {
       root.classList.remove('dark')
     }
   }, [theme])
+
+  // Initialize notification scheduler
+  useEffect(() => {
+    // Request permission on first load if not already decided
+    const permission = getNotificationPermission()
+    if (permission === 'default') {
+      // Don't auto-request, wait for user to enable reminders
+    } else if (permission === 'granted') {
+      // Start the scheduler
+      const getEvents = () => {
+        return Object.entries(eventsByDate).map(([date, events]) => ({ date, events }))
+      }
+      startNotificationScheduler(getEvents, getRecurringEventsForDate, markReminderSent)
+    }
+
+    return () => {
+      stopNotificationScheduler()
+    }
+  }, [eventsByDate, getRecurringEventsForDate, markReminderSent])
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden touch-none">
@@ -68,6 +93,9 @@ function App() {
 
       {/* Todo panel */}
       <TodoPanel />
+
+      {/* Today widget */}
+      <TodayWidget />
 
       {/* Toast notifications */}
       <Toaster

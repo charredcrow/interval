@@ -197,3 +197,16 @@ export function formatTimeDisplay(time: string): string {
   const displayHours = hours % 12 || 12
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`
 }
+
+/**
+ * Parse date string (YYYY-MM-DD) to Date object
+ */
+export function parseToDate(dateStr: string): Date | undefined {
+  if (!dateStr) return undefined
+  try {
+    const date = parseISO(dateStr)
+    return isNaN(date.getTime()) ? undefined : date
+  } catch {
+    return undefined
+  }
+}

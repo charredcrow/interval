@@ -31,6 +31,9 @@ interface UIState {
   // Todo panel state
   isTodoPanelOpen: boolean
   
+  // Today widget state
+  isTodayWidgetOpen: boolean
+  
   // Settings
   hideEmptyDays: boolean
   theme: Theme
@@ -58,6 +61,10 @@ interface UIState {
   // Todo panel actions
   openTodoPanel: () => void
   closeTodoPanel: () => void
+  
+  // Today widget actions
+  openTodayWidget: () => void
+  closeTodayWidget: () => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -74,6 +81,7 @@ export const useUIStore = create<UIState>()(
       isRecurringEventDialogOpen: false,
       editingRecurringEventId: null,
       isTodoPanelOpen: false,
+      isTodayWidgetOpen: false,
       hideEmptyDays: false,
       theme: 'light',
 
@@ -184,6 +192,14 @@ export const useUIStore = create<UIState>()(
 
       closeTodoPanel: () => {
         set({ isTodoPanelOpen: false })
+      },
+
+      openTodayWidget: () => {
+        set({ isTodayWidgetOpen: true })
+      },
+
+      closeTodayWidget: () => {
+        set({ isTodayWidgetOpen: false })
       },
     }),
     {

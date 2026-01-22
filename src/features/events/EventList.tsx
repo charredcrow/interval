@@ -27,6 +27,7 @@ export const EventList = memo(function EventList({
           <EventCard
             key={event.id}
             event={event}
+            date={date}
             onEdit={() => onEditEvent(event.id, date)}
             onDelete={() => onDeleteEvent(event.id, date)}
           />
