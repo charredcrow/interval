@@ -17,7 +17,7 @@ import type { DayOfWeek } from '@/types'
 import { cn } from '@/utils/cn'
 
 // Estimated height per day card for virtualization
-const ESTIMATED_DAY_HEIGHT = 200
+const ESTIMATED_DAY_HEIGHT = 120
 
 // Scroll threshold for loading more dates (in pixels)
 const SCROLL_LOAD_THRESHOLD = 300
@@ -172,8 +172,8 @@ export function TimelineView() {
       // Estimate height based on whether there are events
       if (hasEvents) {
         const eventCount = eventsByDate[date]?.length || 0
-        // Base height + event cards (each ~80px) + spacing
-        return 120 + eventCount * 80
+        // Base height + event cards (each ~60px) + spacing
+        return 80 + eventCount * 60
       }
       return ESTIMATED_DAY_HEIGHT
     },
@@ -459,9 +459,12 @@ export function TimelineView() {
         contain: 'strict',
         scrollBehavior: 'auto', // Instant scroll to prevent flickering
         willChange: 'scroll-position', // Optimize for scroll performance
+        overscrollBehavior: 'contain', // Prevent scroll chaining on mobile
+        WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+        touchAction: 'pan-y', // Allow vertical scrolling only
       }}
     >
-      <div className="relative max-w-4xl mx-auto px-2 py-8">
+      <div className="relative max-w-4xl mx-auto px-2 py-4">
         <div
           style={{
             height: `${virtualizer.getTotalSize()}px`,
@@ -494,15 +497,15 @@ export function TimelineView() {
                 }}
               >
                 {/* Timeline dot */}
-                <div className="absolute left-8 sm:left-12 top-8 -translate-x-1/2 z-10">
+                <div className="absolute left-8 sm:left-12 top-4 -translate-x-1/2 z-10">
                   <div
                     className={cn(
                       'absolute left-1/2 -translate-x-1/2 rounded-full transition-all duration-200',
                       isToday
-                        ? 'w-3.5 h-3.5 bg-accent border-2 border-accent shadow-[0_0_0_4px_oklch(0.4_0.12_250_/_0.1)]'
+                        ? 'w-3 h-3 bg-accent border-2 border-accent shadow-[0_0_0_3px_oklch(0.4_0.12_250_/_0.1)]'
                         : isPast
-                          ? 'w-2.5 h-2.5 bg-border border-2 border-border'
-                          : 'w-2.5 h-2.5 bg-background border-2 border-border'
+                          ? 'w-2 h-2 bg-border border-2 border-border'
+                          : 'w-2 h-2 bg-background border-2 border-border'
                     )}
                   />
                 </div>
@@ -510,9 +513,9 @@ export function TimelineView() {
                 {/* Connecting line to next item (except last) */}
                 {!isLast && (
                   <div
-                    className="absolute left-8 sm:left-12 top-16 w-px bg-border"
+                    className="absolute left-8 sm:left-12 top-10 w-px bg-border"
                     style={{
-                      height: `${Math.max(0, virtualItem.size - 32)}px`,
+                      height: `${Math.max(0, virtualItem.size - 24)}px`,
                     }}
                   />
                 )}

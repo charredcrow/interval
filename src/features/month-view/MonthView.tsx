@@ -94,7 +94,15 @@ export function MonthView() {
   }
 
   return (
-    <div ref={parentRef} className="absolute inset-0 overflow-auto px-6 sm:px-8 py-8">
+    <div 
+      ref={parentRef} 
+      className="absolute inset-0 overflow-auto px-6 sm:px-8 py-8"
+      style={{
+        overscrollBehavior: 'contain',
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'pan-y',
+      }}
+    >
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-8">

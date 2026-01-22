@@ -32,22 +32,22 @@ export const RecurringEventCard = memo(function RecurringEventCard({
     >
       <div
         className={cn(
-          'relative rounded-lg border border-dashed border-border bg-card/50 p-4 transition-all duration-200',
+          'relative rounded-md border border-dashed border-border bg-card/50 px-3 py-2.5 transition-all duration-200',
           'hover:border-accent/30 hover:shadow-sm',
           'cursor-pointer',
-          eventColor && 'border-l-4 border-l-solid'
+          eventColor && 'border-l-[3px] border-l-solid'
         )}
         style={eventColor ? { borderLeftColor: eventColor } : undefined}
         onClick={onEdit}
       >
         {/* Badges row */}
-        <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
           {/* Recurring badge */}
           <Badge
             variant="outline"
-            className="gap-1.5 text-xs font-medium px-2 py-0.5 border-dashed"
+            className="gap-1 text-[10px] font-medium px-1.5 py-0 border-dashed"
           >
-            <Repeat className="h-3 w-3" />
+            <Repeat className="h-2.5 w-2.5" />
             Recurring
           </Badge>
 
@@ -55,22 +55,22 @@ export const RecurringEventCard = memo(function RecurringEventCard({
           {event.time && (
             <Badge
               variant="muted"
-              className="gap-1.5 text-xs font-medium px-2 py-0.5"
+              className="gap-1 text-[10px] font-medium px-1.5 py-0"
             >
-              <Clock className="h-3 w-3" />
+              <Clock className="h-2.5 w-2.5" />
               {formatTimeDisplay(event.time)}
             </Badge>
           )}
         </div>
 
         {/* Title */}
-        <h4 className="font-medium text-sm leading-snug pr-12 text-foreground">
+        <h4 className="font-medium text-xs leading-snug pr-10 text-foreground">
           {event.title}
         </h4>
 
         {/* Description preview */}
         {event.description && (
-          <p className="mt-2 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+          <p className="mt-1 text-[10px] text-muted-foreground line-clamp-1 leading-relaxed">
             {event.description}
           </p>
         )}
@@ -78,7 +78,7 @@ export const RecurringEventCard = memo(function RecurringEventCard({
         {/* Hover actions - Hidden on mobile */}
         <div
           className={cn(
-            'absolute top-3 right-3 gap-1',
+            'absolute top-2 right-2 gap-0.5',
             'hidden sm:flex', // Hide on mobile
             'opacity-0 group-hover:opacity-100 transition-opacity duration-200'
           )}
@@ -90,9 +90,9 @@ export const RecurringEventCard = memo(function RecurringEventCard({
               e.stopPropagation()
               onEdit()
             }}
-            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
           >
-            <Pencil className="h-3.5 w-3.5" />
+            <Pencil className="h-3 w-3" />
           </Button>
           <Button
             variant="ghost"
@@ -101,9 +101,9 @@ export const RecurringEventCard = memo(function RecurringEventCard({
               e.stopPropagation()
               onDelete()
             }}
-            className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-3 w-3" />
           </Button>
         </div>
       </div>

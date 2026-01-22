@@ -24,12 +24,12 @@ function App() {
   }, [theme])
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden touch-none">
       {/* Header with navigation */}
       <Header />
 
       {/* Main content */}
-      <main className="flex-1 relative pt-12 pb-32 overflow-hidden bg-background">
+      <main className="flex-1 relative pt-10 pb-24 overflow-hidden bg-background">
         <AnimatePresence mode="wait">
           {viewMode === 'timeline' ? (
             <motion.div

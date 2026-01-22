@@ -21,7 +21,7 @@ export const EventList = memo(function EventList({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       <AnimatePresence mode="popLayout">
         {events.map((event) => (
           <EventCard

@@ -750,7 +750,7 @@ export function QuickAdd() {
         className={cn(
           'fixed bottom-0 left-0 right-0 z-40',
           'bg-gradient-to-t from-background via-background/95 to-transparent',
-          'pb-6 pt-10 px-6'
+          'pb-4 pt-6 px-4'
         )}
       >
         <form
@@ -759,19 +759,19 @@ export function QuickAdd() {
         >
           <div
             className={cn(
-              'flex items-center gap-3 p-3 rounded-xl border bg-card shadow-lg transition-all duration-200',
+              'flex items-center gap-2.5 p-2.5 rounded-lg border bg-card shadow-lg transition-all duration-200',
               isFocused && 'ring-2 ring-accent/20 border-accent/50 shadow-xl'
             )}
           >
             <div
               className={cn(
-                'h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200',
+                'h-8 w-8 rounded-md flex items-center justify-center flex-shrink-0 transition-all duration-200',
                 isFocused
                   ? 'bg-accent text-accent-foreground scale-105'
                   : 'bg-muted text-muted-foreground'
               )}
             >
-              <Zap className="h-4 w-4" />
+              <Zap className="h-3.5 w-3.5" />
             </div>
 
             <Input
@@ -781,16 +781,16 @@ export function QuickAdd() {
               onFocus={handleFocus}
               onBlur={handleBlur}
               placeholder="Quick add event to today..."
-              className="border-0 shadow-none focus-visible:ring-0 bg-transparent text-sm"
+              className="border-0 shadow-none focus-visible:ring-0 bg-transparent text-xs h-8"
             />
 
             <Button
               type="submit"
               size="sm"
               disabled={!value.trim()}
-              className="flex-shrink-0 gap-1.5 font-medium"
+              className="flex-shrink-0 gap-1 font-medium h-7 text-xs px-3"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               Add
             </Button>
 
@@ -801,9 +801,9 @@ export function QuickAdd() {
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  className="flex-shrink-0 h-9 w-9"
+                  className="flex-shrink-0 h-8 w-8"
                 >
-                  <Menu className="h-4 w-4" />
+                  <Menu className="h-3.5 w-3.5" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent 
@@ -973,12 +973,12 @@ export function QuickAdd() {
           </div>
 
           {/* Keyboard hint */}
-          <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
+          <div className="flex items-center justify-center gap-3 mt-2 text-[10px] text-muted-foreground">
             <span>
-              Press <kbd className="px-1.5 py-0.5 rounded border bg-muted font-mono text-[10px]">/</kbd> to focus
+              Press <kbd className="px-1 py-0.5 rounded border bg-muted font-mono text-[9px]">/</kbd> to focus
             </span>
             <span>
-              <kbd className="px-1.5 py-0.5 rounded border bg-muted font-mono text-[10px]">Enter</kbd> to add
+              <kbd className="px-1 py-0.5 rounded border bg-muted font-mono text-[9px]">Enter</kbd> to add
             </span>
           </div>
         </form>

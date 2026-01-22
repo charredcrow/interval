@@ -108,6 +108,15 @@
   border-color: var(--color-border);
 }
 
+html, body {
+  overflow: hidden;
+  overscroll-behavior: none;
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  touch-action: none;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--color-background);
@@ -115,6 +124,12 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.01em;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 /* Custom scrollbar - Minimal like Framer */
@@ -174,5 +189,30 @@ body {
   textarea,
   select {
     font-size: 16px !important;
+  }
+}
+
+/* Mobile scroll improvements */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific */
+  html, body {
+    height: 100%;
+    height: -webkit-fill-available;
+  }
+  
+  #root {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Prevent pull-to-refresh and overscroll effects */
+@media (pointer: coarse) {
+  html {
+    overscroll-behavior-y: none;
+  }
+  
+  body {
+    overscroll-behavior-y: none;
   }
 }

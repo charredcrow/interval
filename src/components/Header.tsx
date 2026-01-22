@@ -26,20 +26,20 @@ export function Header() {
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-background via-background/95 to-transparent pt-2 pb-4 px-6"
+      className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-background via-background/95 to-transparent pt-1.5 pb-2 px-4"
     >
-      <div className="flex items-center justify-start h-8">
+      <div className="flex items-center justify-start h-7">
         {/* Logo - Framer style */}
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={navigateToToday}
-          className="flex items-center gap-2.5 group"
+          className="flex items-center gap-2 group"
         >
-          <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center transition-all duration-200 group-hover:scale-105">
-            <IntervalIcon className="h-4 w-4 text-accent-foreground" />
+          <div className="h-7 w-7 rounded-md bg-accent flex items-center justify-center transition-all duration-200 group-hover:scale-105">
+            <IntervalIcon className="h-3.5 w-3.5 text-accent-foreground" />
           </div>
-          <span className="font-semibold text-lg tracking-tight text-foreground">
+          <span className="font-semibold text-base tracking-tight text-foreground">
             Interval
           </span>
         </motion.button>

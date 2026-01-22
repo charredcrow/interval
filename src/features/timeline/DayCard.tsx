@@ -99,7 +99,7 @@ export const DayCard = memo(
       <div
         ref={ref}
         className={cn(
-          'pl-12 sm:pl-16 pr-4 pt-8 pb-12 relative',
+          'pl-12 sm:pl-16 pr-4 pt-4 pb-6 relative',
           isToday && 'bg-primary/5',
           className
         )}
@@ -111,32 +111,32 @@ export const DayCard = memo(
         )}
         
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          className="flex flex-col gap-5"
+          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+          className="flex flex-col gap-3"
         >
-          {/* Date header - Framer style */}
-          <div className="flex items-baseline gap-3">
+          {/* Date header - Compact style */}
+          <div className="flex items-baseline gap-2">
             <div className="flex flex-col">
-              <div className="flex items-baseline gap-2">
+              <div className="flex items-baseline gap-1.5">
                 <span
                   className={cn(
-                    'text-4xl sm:text-5xl font-semibold tracking-tight',
+                    'text-2xl sm:text-3xl font-semibold tracking-tight',
                     isToday ? 'text-primary' : hasEvents ? 'text-foreground' : 'text-foreground/50'
                   )}
                 >
                   {dayNumber}
                 </span>
                 <span className={cn(
-                  'text-sm font-medium uppercase tracking-wider',
+                  'text-xs font-medium uppercase tracking-wider',
                   isToday ? 'text-primary/70' : hasEvents ? 'text-muted-foreground' : 'text-muted-foreground/50'
                 )}>
                   {monthShort}
                 </span>
               </div>
               <span className={cn(
-                'text-sm mt-1 font-medium',
+                'text-xs font-medium',
                 isToday ? 'text-primary' : hasEvents ? 'text-muted-foreground' : 'text-muted-foreground/50'
               )}>
                 {isToday ? 'Today' : weekday}
@@ -146,10 +146,10 @@ export const DayCard = memo(
 
           {/* Events container */}
           {totalCount > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {/* Event summary */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                <Clock className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <Clock className="h-3 w-3" />
                 <span>
                   {totalCount} event{totalCount !== 1 ? 's' : ''}
                   {recurringCount > 0 && ` · ${recurringCount} recurring`}
@@ -159,7 +159,7 @@ export const DayCard = memo(
 
               {/* Recurring events */}
               {recurringCount > 0 && (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1.5">
                   <AnimatePresence mode="popLayout">
                     {recurringEvents.map((event) => (
                       <RecurringEventCard
@@ -182,8 +182,8 @@ export const DayCard = memo(
               />
             </div>
           ) : isToday ? (
-            <div className="flex flex-col gap-3 py-3">
-              <p className="text-sm text-muted-foreground/70">
+            <div className="flex flex-col gap-2 py-1">
+              <p className="text-xs text-muted-foreground/70">
                 No events scheduled for today
               </p>
               <Button
@@ -191,12 +191,12 @@ export const DayCard = memo(
                 size="sm"
                 onClick={handleAddEvent}
                 className={cn(
-                  'w-fit gap-2 text-xs font-medium',
+                  'w-fit gap-1.5 text-xs font-medium h-7',
                   'border-border/50 hover:border-accent/50 hover:bg-accent/5',
                   'transition-all duration-200'
                 )}
               >
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="h-3 w-3" />
                 Add your first event
               </Button>
             </div>
@@ -209,12 +209,12 @@ export const DayCard = memo(
               size="sm"
               onClick={handleAddEvent}
               className={cn(
-                'w-fit gap-2 text-xs font-medium text-muted-foreground hover:text-foreground',
+                'w-fit gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground h-7',
                 'hover:bg-muted/50 transition-all duration-200',
                 'border-0 shadow-none'
               )}
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-3 w-3" />
               Add event
             </Button>
           )}

@@ -32,10 +32,10 @@ export const EventCard = memo(function EventCard({
     >
       <div
         className={cn(
-          'relative rounded-lg border border-border bg-card p-4 transition-all duration-200',
+          'relative rounded-md border border-border bg-card px-3 py-2.5 transition-all duration-200',
           'hover:border-accent/30 hover:shadow-sm',
           'cursor-pointer',
-          eventColor && 'border-l-4'
+          eventColor && 'border-l-[3px]'
         )}
         style={eventColor ? { borderLeftColor: eventColor } : undefined}
         onClick={onEdit}
@@ -44,21 +44,21 @@ export const EventCard = memo(function EventCard({
         {event.time && (
           <Badge
             variant="muted"
-            className="mb-2.5 gap-1.5 text-xs font-medium px-2 py-0.5"
+            className="mb-1.5 gap-1 text-[10px] font-medium px-1.5 py-0"
           >
-            <Clock className="h-3 w-3" />
+            <Clock className="h-2.5 w-2.5" />
             {formatTimeDisplay(event.time)}
           </Badge>
         )}
 
         {/* Title */}
-        <h4 className="font-medium text-sm leading-snug pr-12 text-foreground">
+        <h4 className="font-medium text-xs leading-snug pr-10 text-foreground">
           {event.title}
         </h4>
 
         {/* Description preview */}
         {event.description && (
-          <p className="mt-2 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+          <p className="mt-1 text-[10px] text-muted-foreground line-clamp-1 leading-relaxed">
             {event.description}
           </p>
         )}
@@ -66,7 +66,7 @@ export const EventCard = memo(function EventCard({
         {/* Hover actions - Hidden on mobile, visible on hover for desktop */}
         <div
           className={cn(
-            'absolute top-3 right-3 gap-1',
+            'absolute top-2 right-2 gap-0.5',
             'hidden sm:flex', // Hide on mobile
             'opacity-0 group-hover:opacity-100 transition-opacity duration-200'
           )}
@@ -78,9 +78,9 @@ export const EventCard = memo(function EventCard({
               e.stopPropagation()
               onEdit()
             }}
-            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted"
           >
-            <Pencil className="h-3.5 w-3.5" />
+            <Pencil className="h-3 w-3" />
           </Button>
           <Button
             variant="ghost"
@@ -89,9 +89,9 @@ export const EventCard = memo(function EventCard({
               e.stopPropagation()
               onDelete()
             }}
-            className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-3 w-3" />
           </Button>
         </div>
       </div>
