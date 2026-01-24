@@ -55,13 +55,20 @@ export function EventDialog() {
   const [newTagColor, setNewTagColor] = useState<EventColor>('blue')
   const [showNewTagForm, setShowNewTagForm] = useState(false)
   
-  // Collapsible sections state
-  const [showTime, setShowTime] = useState(false)
-  const [showEnd, setShowEnd] = useState(false)
-  const [showDescription, setShowDescription] = useState(false)
-  const [showColor, setShowColor] = useState(false)
-  const [showTags, setShowTags] = useState(false)
-  const [showReminder, setShowReminder] = useState(false)
+  // Collapsible sections state - accordion behavior: only one open at a time
+  const [openSection, setOpenSection] = useState<string | null>(null)
+  
+  // Helper functions for accordion behavior
+  const toggleSection = (section: string) => {
+    setOpenSection(openSection === section ? null : section)
+  }
+  
+  const showTime = openSection === 'time'
+  const showEnd = openSection === 'end'
+  const showDescription = openSection === 'description'
+  const showColor = openSection === 'color'
+  const showTags = openSection === 'tags'
+  const showReminder = openSection === 'reminder'
 
   // Load existing event data when editing
   useEffect(() => {
@@ -78,13 +85,8 @@ export function EventDialog() {
         setSelectedTags(event.tags || [])
         setReminder(event.reminder)
         setDate(eventDialogDate)
-        // Expand sections if they have data
-        setShowTime(!!event.time)
-        setShowEnd(!!event.endDate || !!event.endTime)
-        setShowDescription(!!event.description)
-        setShowColor(!!event.color)
-        setShowTags((event.tags?.length ?? 0) > 0)
-        setShowReminder(event.reminder !== undefined)
+        // All sections closed by default, even when editing
+        setOpenSection(null)
       }
     } else {
       // Reset form for new event
@@ -97,13 +99,8 @@ export function EventDialog() {
       setSelectedTags([])
       setReminder(undefined)
       setDate(eventDialogDate || getTodayString())
-      // Collapse sections for new events
-      setShowTime(false)
-      setShowEnd(false)
-      setShowDescription(false)
-      setShowColor(false)
-      setShowTags(false)
-      setShowReminder(false)
+      // All sections closed by default
+      setOpenSection(null)
       setShowNewTagForm(false)
       setNewTagName('')
     }
@@ -248,7 +245,7 @@ export function EventDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {/* Date picker - only show for new events */}
           {!editingEvent && (
             <div className="space-y-2">
@@ -282,7 +279,7 @@ export function EventDialog() {
           <div className="space-y-2">
             <button
               type="button"
-              onClick={() => setShowTime(!showTime)}
+              onClick={() => toggleSection('time')}
               className={cn(
                 'flex items-center gap-2 text-sm font-medium w-full text-left',
                 'text-muted-foreground hover:text-foreground transition-colors'
@@ -294,7 +291,7 @@ export function EventDialog() {
                   !showTime && '-rotate-90'
                 )} 
               />
-              Time (optional)
+              Time
             </button>
             <AnimatePresence>
               {showTime && (
@@ -320,7 +317,7 @@ export function EventDialog() {
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => setShowEnd(!showEnd)}
+                onClick={() => toggleSection('end')}
                 className={cn(
                   'flex items-center gap-2 text-sm font-medium w-full text-left',
                   'text-muted-foreground hover:text-foreground transition-colors'
@@ -332,7 +329,7 @@ export function EventDialog() {
                     !showEnd && '-rotate-90'
                   )} 
                 />
-                End Date & Time (optional)
+                End Date & Time
               </button>
               <AnimatePresence>
                 {showEnd && (
@@ -370,7 +367,7 @@ export function EventDialog() {
           <div className="space-y-2">
             <button
               type="button"
-              onClick={() => setShowDescription(!showDescription)}
+              onClick={() => toggleSection('description')}
               className={cn(
                 'flex items-center gap-2 text-sm font-medium w-full text-left',
                 'text-muted-foreground hover:text-foreground transition-colors'
@@ -382,7 +379,7 @@ export function EventDialog() {
                   !showDescription && '-rotate-90'
                 )} 
               />
-              Description (optional)
+              Description
             </button>
             <AnimatePresence>
               {showDescription && (
@@ -410,7 +407,7 @@ export function EventDialog() {
           <div className="space-y-2">
             <button
               type="button"
-              onClick={() => setShowColor(!showColor)}
+              onClick={() => toggleSection('color')}
               className={cn(
                 'flex items-center gap-2 text-sm font-medium w-full text-left',
                 'text-muted-foreground hover:text-foreground transition-colors'
@@ -422,7 +419,7 @@ export function EventDialog() {
                   !showColor && '-rotate-90'
                 )} 
               />
-              Color (optional)
+              Color
             </button>
             <AnimatePresence>
               {showColor && (
@@ -445,7 +442,7 @@ export function EventDialog() {
           <div className="space-y-2">
             <button
               type="button"
-              onClick={() => setShowTags(!showTags)}
+              onClick={() => toggleSection('tags')}
               className={cn(
                 'flex items-center gap-2 text-sm font-medium w-full text-left',
                 'text-muted-foreground hover:text-foreground transition-colors'
@@ -458,7 +455,7 @@ export function EventDialog() {
                 )} 
               />
               <Tag className="h-4 w-4" />
-              Tags (optional)
+              Tags
             </button>
             <AnimatePresence>
               {showTags && (
@@ -582,7 +579,7 @@ export function EventDialog() {
               <button
                 type="button"
                 onClick={async () => {
-                  if (!showReminder) {
+                  if (openSection !== 'reminder') {
                     // Request permission when opening
                     const permission = getNotificationPermission()
                     if (permission === 'default') {
@@ -596,7 +593,7 @@ export function EventDialog() {
                       return
                     }
                   }
-                  setShowReminder(!showReminder)
+                  toggleSection('reminder')
                 }}
                 className={cn(
                   'flex items-center gap-2 text-sm font-medium w-full text-left',
@@ -610,7 +607,7 @@ export function EventDialog() {
                   )} 
                 />
                 <Bell className="h-4 w-4" />
-                Reminder (optional)
+                Reminder
               </button>
               <AnimatePresence>
                 {showReminder && (

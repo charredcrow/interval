@@ -54,12 +54,19 @@ export function RecurringEventDialog() {
   const [repeatUntil, setRepeatUntil] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  // Collapsible sections state
-  const [showTime, setShowTime] = useState(false)
-  const [showEndTime, setShowEndTime] = useState(false)
-  const [showDescription, setShowDescription] = useState(false)
-  const [showColor, setShowColor] = useState(false)
-  const [showRepeatUntil, setShowRepeatUntil] = useState(false)
+  // Collapsible sections state - accordion behavior: only one open at a time
+  const [openSection, setOpenSection] = useState<string | null>(null)
+  
+  // Helper function for accordion behavior
+  const toggleSection = (section: string) => {
+    setOpenSection(openSection === section ? null : section)
+  }
+  
+  const showTime = openSection === 'time'
+  const showEndTime = openSection === 'endTime'
+  const showDescription = openSection === 'description'
+  const showColor = openSection === 'color'
+  const showRepeatUntil = openSection === 'repeatUntil'
 
   // Load existing recurring event data when editing
   useEffect(() => {
@@ -73,12 +80,8 @@ export function RecurringEventDialog() {
         setColor(event.color)
         setEnabledDays(event.enabledDays)
         setRepeatUntil(event.repeatUntil || '')
-        // Expand sections if they have data
-        setShowTime(!!event.time)
-        setShowEndTime(!!event.endTime)
-        setShowDescription(!!event.description)
-        setShowColor(!!event.color)
-        setShowRepeatUntil(!!event.repeatUntil)
+        // All sections closed by default, even when editing
+        setOpenSection(null)
       }
     } else {
       // Reset form for new recurring event
@@ -89,12 +92,8 @@ export function RecurringEventDialog() {
       setColor(undefined)
       setEnabledDays([0, 1, 2, 3, 4, 5, 6]) // All days enabled by default
       setRepeatUntil('')
-      // Collapse sections for new events
-      setShowTime(false)
-      setShowEndTime(false)
-      setShowDescription(false)
-      setShowColor(false)
-      setShowRepeatUntil(false)
+      // All sections closed by default
+      setOpenSection(null)
     }
   }, [editingRecurringEventId, recurringEvents])
 
@@ -221,7 +220,7 @@ export function RecurringEventDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-2">
             <Label htmlFor="recurring-title" className="text-sm font-medium">
               Title *
@@ -241,7 +240,7 @@ export function RecurringEventDialog() {
           <div className="space-y-2">
             <button
               type="button"
-              onClick={() => setShowTime(!showTime)}
+              onClick={() => toggleSection('time')}
               className={cn(
                 'flex items-center gap-2 text-sm font-medium w-full text-left',
                 'text-muted-foreground hover:text-foreground transition-colors'
@@ -253,7 +252,7 @@ export function RecurringEventDialog() {
                   !showTime && '-rotate-90'
                 )} 
               />
-              Start Time (optional)
+              Start Time
             </button>
             <AnimatePresence>
               {showTime && (
@@ -279,7 +278,7 @@ export function RecurringEventDialog() {
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => setShowEndTime(!showEndTime)}
+                onClick={() => toggleSection('endTime')}
                 className={cn(
                   'flex items-center gap-2 text-sm font-medium w-full text-left',
                   'text-muted-foreground hover:text-foreground transition-colors'
@@ -291,7 +290,7 @@ export function RecurringEventDialog() {
                     !showEndTime && '-rotate-90'
                   )} 
                 />
-                End Time (optional)
+                End Time
               </button>
               <AnimatePresence>
                 {showEndTime && (
@@ -344,7 +343,7 @@ export function RecurringEventDialog() {
           <div className="space-y-2">
             <button
               type="button"
-              onClick={() => setShowDescription(!showDescription)}
+              onClick={() => toggleSection('description')}
               className={cn(
                 'flex items-center gap-2 text-sm font-medium w-full text-left',
                 'text-muted-foreground hover:text-foreground transition-colors'
@@ -356,7 +355,7 @@ export function RecurringEventDialog() {
                   !showDescription && '-rotate-90'
                 )} 
               />
-              Description (optional)
+              Description
             </button>
             <AnimatePresence>
               {showDescription && (
@@ -384,7 +383,7 @@ export function RecurringEventDialog() {
           <div className="space-y-2">
             <button
               type="button"
-              onClick={() => setShowColor(!showColor)}
+              onClick={() => toggleSection('color')}
               className={cn(
                 'flex items-center gap-2 text-sm font-medium w-full text-left',
                 'text-muted-foreground hover:text-foreground transition-colors'
@@ -396,7 +395,7 @@ export function RecurringEventDialog() {
                   !showColor && '-rotate-90'
                 )} 
               />
-              Color (optional)
+              Color
             </button>
             <AnimatePresence>
               {showColor && (
@@ -419,7 +418,7 @@ export function RecurringEventDialog() {
           <div className="space-y-2">
             <button
               type="button"
-              onClick={() => setShowRepeatUntil(!showRepeatUntil)}
+              onClick={() => toggleSection('repeatUntil')}
               className={cn(
                 'flex items-center gap-2 text-sm font-medium w-full text-left',
                 'text-muted-foreground hover:text-foreground transition-colors'
@@ -432,7 +431,7 @@ export function RecurringEventDialog() {
                 )} 
               />
               <CalendarOff className="h-4 w-4" />
-              Repeat Until (optional)
+              Repeat Until
             </button>
             <AnimatePresence>
               {showRepeatUntil && (
