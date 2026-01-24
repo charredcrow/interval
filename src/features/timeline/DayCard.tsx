@@ -29,7 +29,7 @@ const EMPTY_EVENTS: Event[] = []
 
 export const DayCard = memo(
   forwardRef<HTMLDivElement, DayCardProps>(function DayCard(
-    { date, className, ...props },
+    { date, className, isFirst, isLast, ...props },
     ref
   ) {
     const [isDragOver, setIsDragOver] = useState(false)

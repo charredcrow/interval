@@ -1,6 +1,6 @@
 import { Toaster } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Header } from '@/components/Header'
 import { QuickAdd } from '@/components/QuickAdd'
 import { TimelineView } from '@/features/timeline'
@@ -15,9 +15,20 @@ import { startNotificationScheduler, stopNotificationScheduler, getNotificationP
 function App() {
   const viewMode = useUIStore((state) => state.viewMode)
   const theme = useUIStore((state) => state.theme)
-  const eventsByDate = useTimelineStore((state) => state.eventsByDate)
+  
+  // Get store functions directly - these are stable references
   const getRecurringEventsForDate = useTimelineStore((state) => state.getRecurringEventsForDate)
   const markReminderSent = useTimelineStore((state) => state.markReminderSent)
+
+  // Use refs to store stable references that don't trigger re-renders
+  const getRecurringEventsForDateRef = useRef(getRecurringEventsForDate)
+  const markReminderSentRef = useRef(markReminderSent)
+
+  // Keep refs updated with latest values
+  useEffect(() => {
+    getRecurringEventsForDateRef.current = getRecurringEventsForDate
+    markReminderSentRef.current = markReminderSent
+  }, [getRecurringEventsForDate, markReminderSent])
 
   // Apply theme on mount and when it changes
   useEffect(() => {
@@ -29,24 +40,31 @@ function App() {
     }
   }, [theme])
 
-  // Initialize notification scheduler
+  // Initialize notification scheduler - only once on mount
   useEffect(() => {
     // Request permission on first load if not already decided
     const permission = getNotificationPermission()
     if (permission === 'default') {
       // Don't auto-request, wait for user to enable reminders
     } else if (permission === 'granted') {
-      // Start the scheduler
+      // Start the scheduler - access store directly via getState() to avoid subscriptions
       const getEvents = () => {
-        return Object.entries(eventsByDate).map(([date, events]) => ({ date, events }))
+        const state = useTimelineStore.getState()
+        return Object.entries(state.eventsByDate).map(([date, events]) => ({ date, events }))
       }
-      startNotificationScheduler(getEvents, getRecurringEventsForDate, markReminderSent)
+      startNotificationScheduler(
+        getEvents,
+        getRecurringEventsForDateRef.current,
+        markReminderSentRef.current
+      )
     }
 
     return () => {
       stopNotificationScheduler()
     }
-  }, [eventsByDate, getRecurringEventsForDate, markReminderSent])
+    // Empty dependency array - only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden touch-none">

@@ -11,13 +11,16 @@ import { cn } from '@/utils/cn'
 import { parseISO, getDay } from 'date-fns'
 import type { DayOfWeek } from '@/types'
 
+// Empty array constant to avoid re-renders
+const EMPTY_EVENTS: never[] = []
+
 export function TodayWidget() {
   const isTodayWidgetOpen = useUIStore((state) => state.isTodayWidgetOpen)
   const closeTodayWidget = useUIStore((state) => state.closeTodayWidget)
   const openEventDialog = useUIStore((state) => state.openEventDialog)
   
   const today = getTodayString()
-  const events = useTimelineStore((state) => state.eventsByDate[today] || [])
+  const events = useTimelineStore((state) => state.eventsByDate[today] ?? EMPTY_EVENTS)
   const recurringEvents = useTimelineStore((state) => state.recurringEvents)
   const tags = useTimelineStore((state) => state.tags)
   
