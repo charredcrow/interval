@@ -20,15 +20,15 @@ import { cn } from '@/utils/cn'
 const ESTIMATED_DAY_HEIGHT = 120
 
 // Scroll threshold for loading more dates (in pixels)
-const SCROLL_LOAD_THRESHOLD = 300
-const SCROLL_LOAD_THRESHOLD_PAST = 100 // Lower threshold for past dates to avoid premature loading
+const SCROLL_LOAD_THRESHOLD = 150 // Reduced from 300 for earlier loading
+const SCROLL_LOAD_THRESHOLD_PAST = 50 // Reduced from 100 for earlier loading
 
 // Debounce delay for scroll handler (in ms)
-const SCROLL_DEBOUNCE_MS = 100
+const SCROLL_DEBOUNCE_MS = 50 // Reduced from 100ms for faster response
 
 // Number of days to load at once
-const PAST_DAYS_LOAD_COUNT = 5
-const FUTURE_DAYS_LOAD_COUNT = 30
+const PAST_DAYS_LOAD_COUNT = 15 // Increased from 5 for more days per load
+const FUTURE_DAYS_LOAD_COUNT = 50 // Increased from 30 for more days per load
 
 // Number of past days to always show (even without events)
 const ALWAYS_SHOW_PAST_DAYS = 10
@@ -59,6 +59,7 @@ export function TimelineView() {
   const scrollAnchorRef = useRef<{
     date: string
     offset: number
+    timestamp?: number
   } | null>(null)
 
   // Filter dates based on search query and visibility rules
@@ -105,27 +106,29 @@ export function TimelineView() {
           return false
         }
         
-        // Calculate how many days this date is from the earliest loaded date
-        const daysFromEarliestForThisDate = daysFromToday - daysFromEarliest
-        
         // Show first 10 past days from today (even without events) if hideEmptyDays is off
-        // OR show all loaded past days within first 10 days from the earliest loaded date
-        // This ensures that when we lazy-load past days, they become visible
         const isWithinFirst10FromToday = daysFromToday >= -ALWAYS_SHOW_PAST_DAYS
-        const isWithinFirst10FromEarliest = daysFromEarliestForThisDate <= ALWAYS_SHOW_PAST_DAYS
 
-        if (isWithinFirst10FromToday || isWithinFirst10FromEarliest) {
-          // If hideEmptyDays is enabled, only show if has events
+        if (isWithinFirst10FromToday) {
+          // First 10 days from today: show based on hideEmptyDays setting
           if (hideEmptyDays) {
             return hasEvents
           }
-          // Otherwise show always
           return true
         }
 
-        // Beyond first 10 days: show only if has events
-        // And if hideEmptyDays is enabled, we already filtered above, so this applies when it's disabled
-        return hasEvents
+        // For all other past days: use the same logic as future days
+        // Show all loaded days if hideEmptyDays is off, or only with events if on
+        // This ensures consistency and prevents days from disappearing when new past days are loaded
+        if (hideEmptyDays) {
+          // Hide past days without events
+          if (!hasEvents) return false
+          // Show days with events
+          return true
+        }
+
+        // Show all past days (always show for adding events and to prevent gaps)
+        return true
       }
 
       // Future days
@@ -279,6 +282,15 @@ export function TimelineView() {
       return
     }
 
+    // Set a timeout to clear scrollAnchorRef if restoration takes too long
+    // This prevents blocking future loads - reduced timeout for faster response
+    const timeoutId = setTimeout(() => {
+      if (scrollAnchorRef.current) {
+        scrollAnchorRef.current = null
+        isLoadingPastRef.current = false
+      }
+    }, 300) // Reduced to 300ms for faster unblocking
+
     // Find anchor date in updated visible dates immediately
     const newAnchorIndex = visibleDates.findIndex((d) => d === anchorDate)
     
@@ -298,13 +310,15 @@ export function TimelineView() {
             scrollElement.scrollTop = newScrollTop
           }
           
+          clearTimeout(timeoutId)
           scrollAnchorRef.current = null
           isLoadingPastRef.current = false
-        } else if (attempt < 5) {
-          // Retry up to 5 times if item not found yet
+        } else if (attempt < 3) {
+          // Reduced retries from 5 to 3 for faster unblocking
           requestAnimationFrame(() => restoreScroll(attempt + 1))
         } else {
-          // Fallback: give up after 5 attempts
+          // Fallback: give up after 3 attempts to avoid blocking too long
+          clearTimeout(timeoutId)
           scrollAnchorRef.current = null
           isLoadingPastRef.current = false
         }
@@ -315,8 +329,13 @@ export function TimelineView() {
         restoreScroll()
       })
     } else {
+      clearTimeout(timeoutId)
       scrollAnchorRef.current = null
       isLoadingPastRef.current = false
+    }
+
+    return () => {
+      clearTimeout(timeoutId)
     }
   }, [dates, visibleDates, virtualizer])
 
@@ -351,6 +370,7 @@ export function TimelineView() {
     scrollAnchorRef.current = {
       date: anchorDate,
       offset: anchorOffset,
+      timestamp: Date.now(),
     }
 
     // Load exactly PAST_DAYS_LOAD_COUNT days (currently 5)
@@ -400,40 +420,70 @@ export function TimelineView() {
     const scrollElement = parentRef.current
     if (!scrollElement) return
 
+    const { scrollTop } = scrollElement
+    
+    // Aggressive check for loading past dates when user is clearly at the top
+    // If scrollTop is 0 or very close (within 5px), user has reached the top
+    const isAtVeryTop = scrollTop <= 5
+    
+    const now = Date.now()
+    const timeSinceLastLoad = now - lastLoadTimeRef.current
+    
+    // If user is at the very top, be more aggressive with loading
+    // Ignore scrollAnchorRef if user is clearly trying to load more (at very top)
+    if (isAtVeryTop && !isLoadingPastRef.current && timeSinceLastLoad >= 200) {
+      // Force load if at very top, even if scrollAnchorRef is set
+      // This handles the case where user keeps scrolling up at the top
+      if (scrollAnchorRef.current) {
+        // Clear the anchor if it's been there too long (user wants to load more)
+        const anchorAge = now - (scrollAnchorRef.current.timestamp || 0)
+        if (anchorAge > 500) {
+          scrollAnchorRef.current = null
+        }
+      }
+      
+      if (!scrollAnchorRef.current || timeSinceLastLoad >= 500) {
+        lastLoadTimeRef.current = now
+        loadPastDates()
+        return // Don't continue with debounced handler
+      }
+    }
+
     // Clear existing timeout
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current)
     }
 
-    // Debounce scroll handling
+    // Debounce scroll handling for near-top checks
     scrollTimeoutRef.current = setTimeout(() => {
-      const { scrollTop, scrollHeight, clientHeight } = scrollElement
-      const distanceFromTop = scrollTop
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-
-      // Check if we're at the top by checking first visible item
-      const virtualItems = virtualizer.getVirtualItems()
-      const isAtTop = virtualItems.length > 0 && virtualItems[0]?.index === 0
+      const { scrollTop: currentScrollTop, scrollHeight: currentScrollHeight, clientHeight: currentClientHeight } = scrollElement
+      const currentVirtualItems = virtualizer.getVirtualItems()
+      const currentIsAtTop = currentVirtualItems.length > 0 && currentVirtualItems[0]?.index === 0
+      const currentDistanceFromTop = currentScrollTop
+      const currentIsNearTop = currentScrollTop <= SCROLL_LOAD_THRESHOLD_PAST || 
+        (currentIsAtTop && currentDistanceFromTop <= SCROLL_LOAD_THRESHOLD_PAST)
       
-      // Load past dates only when actually at the top (not just near it)
-      // This prevents premature loading and "jumping" behavior
-      const now = Date.now()
-      const timeSinceLastLoad = now - lastLoadTimeRef.current
-      const minLoadInterval = 500 // Minimum 500ms between loads
+      const currentTime = Date.now()
+      const currentTimeSinceLastLoad = currentTime - lastLoadTimeRef.current
+      const minLoadInterval = 200 // Reduced further for faster response
+      
+      // More lenient check - allow loading if near top and not actively restoring scroll
+      const canLoadPast = !isLoadingPastRef.current && 
+        (!scrollAnchorRef.current || currentTimeSinceLastLoad >= 800)
       
       const shouldLoadPast = 
-        (scrollTop === 0 || (isAtTop && distanceFromTop <= SCROLL_LOAD_THRESHOLD_PAST)) &&
-        !isLoadingPastRef.current &&
-        !scrollAnchorRef.current && // Don't load if we're restoring scroll position
-        timeSinceLastLoad >= minLoadInterval // Prevent too frequent loading
+        currentIsNearTop &&
+        canLoadPast &&
+        currentTimeSinceLastLoad >= minLoadInterval
       
       if (shouldLoadPast) {
-        lastLoadTimeRef.current = now
+        lastLoadTimeRef.current = currentTime
         loadPastDates()
       }
 
       // Load future dates when near bottom
-      if (distanceFromBottom < SCROLL_LOAD_THRESHOLD && !isLoadingFutureRef.current) {
+      const currentDistanceFromBottom = currentScrollHeight - currentScrollTop - currentClientHeight
+      if (currentDistanceFromBottom < SCROLL_LOAD_THRESHOLD && !isLoadingFutureRef.current) {
         loadFutureDates()
       }
     }, SCROLL_DEBOUNCE_MS)

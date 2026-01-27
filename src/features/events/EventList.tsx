@@ -1,4 +1,3 @@
-import { memo } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { EventCard } from './EventCard'
 import type { Event } from '@/types'
@@ -10,7 +9,7 @@ interface EventListProps {
   onDeleteEvent: (eventId: string, date: string) => void
 }
 
-export const EventList = memo(function EventList({
+export function EventList({
   events,
   date,
   onEditEvent,
@@ -22,10 +21,10 @@ export const EventList = memo(function EventList({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <AnimatePresence mode="popLayout">
+      <AnimatePresence mode="popLayout" initial={false}>
         {events.map((event) => (
           <EventCard
-            key={event.id}
+            key={`${event.id}-${event.time || 'no-time'}`}
             event={event}
             date={date}
             onEdit={() => onEditEvent(event.id, date)}
@@ -35,4 +34,4 @@ export const EventList = memo(function EventList({
       </AnimatePresence>
     </div>
   )
-})
+}

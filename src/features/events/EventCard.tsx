@@ -33,6 +33,7 @@ export const EventCard = memo(function EventCard({
   
   // Get event tags
   const eventTags = event.tags?.map(tagId => tags.find(t => t.id === tagId)).filter(Boolean) || []
+  const isSameDayEnd = event.endDate && event.endDate === date
 
   const handleDragStart = useCallback((e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = 'move'
@@ -47,6 +48,7 @@ export const EventCard = memo(function EventCard({
   return (
     <motion.div
       layout
+      layoutId={`event-${event.id}`}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: isDragging ? 0.5 : 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.98 }}
@@ -81,10 +83,12 @@ export const EventCard = memo(function EventCard({
               >
                 <Clock className="h-2.5 w-2.5" />
                 {formatTimeDisplay(event.time)}
-                {event.endTime && !event.endDate && ` – ${formatTimeDisplay(event.endTime)}`}
+                {/* When end is the same day (or no explicit endDate), show a pure time range */}
+                {event.endTime && (!event.endDate || isSameDayEnd) && ` – ${formatTimeDisplay(event.endTime)}`}
               </Badge>
             )}
-            {(event.endDate || (event.endTime && event.endDate)) && (
+            {/* Only show separate end date badge when end date is different from the event date */}
+            {event.endDate && !isSameDayEnd && (
               <Badge
                 variant="outline"
                 className="gap-1 text-[10px] font-medium px-1.5 py-0"
@@ -165,5 +169,15 @@ export const EventCard = memo(function EventCard({
         </div>
       </div>
     </motion.div>
+  )
+}, (prevProps, nextProps) => {
+  // Re-render when key event fields change (including color so UI updates)
+  return (
+    prevProps.event.id === nextProps.event.id &&
+    prevProps.event.time === nextProps.event.time &&
+    prevProps.event.title === nextProps.event.title &&
+    prevProps.event.description === nextProps.event.description &&
+    prevProps.event.color === nextProps.event.color &&
+    prevProps.date === nextProps.date
   )
 })

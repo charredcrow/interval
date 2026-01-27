@@ -18,7 +18,7 @@ import { ColorPicker, getEventColor } from '@/components/ui/color-picker'
 import { Trash2, ChevronDown, Bell, Tag, Plus } from 'lucide-react'
 import { useTimelineStore } from '@/store/timelineStore'
 import { useUIStore } from '@/store/uiStore'
-import { formatDate, isValidTimeString, getTodayString, parseToDate } from '@/utils/date'
+import { formatDate, isValidTimeString, getTodayString } from '@/utils/date'
 import { REMINDER_OPTIONS, requestNotificationPermission, getNotificationPermission } from '@/utils/notifications'
 import { cn } from '@/utils/cn'
 import { toast } from 'sonner'
@@ -54,6 +54,7 @@ export function EventDialog() {
   const [newTagName, setNewTagName] = useState('')
   const [newTagColor, setNewTagColor] = useState<EventColor>('blue')
   const [showNewTagForm, setShowNewTagForm] = useState(false)
+  const [shouldAutoFocusTitle, setShouldAutoFocusTitle] = useState(false)
   
   // Collapsible sections state - accordion behavior: only one open at a time
   const [openSection, setOpenSection] = useState<string | null>(null)
@@ -64,11 +65,29 @@ export function EventDialog() {
   }
   
   const showTime = openSection === 'time'
-  const showEnd = openSection === 'end'
   const showDescription = openSection === 'description'
   const showColor = openSection === 'color'
   const showTags = openSection === 'tags'
   const showReminder = openSection === 'reminder'
+
+  // Determine whether to autofocus title (desktop only, no autofocus on mobile/tablet)
+  useEffect(() => {
+    // Run only in browser
+    if (typeof window === 'undefined') {
+      setShouldAutoFocusTitle(false)
+      return
+    }
+
+    // Simple heuristic: treat widths < 768px as mobile/tablet
+    const isSmallScreen = window.innerWidth < 768
+
+    // Additionally check pointer type: coarse usually means touch devices
+    const hasCoarsePointer =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches
+
+    setShouldAutoFocusTitle(!isSmallScreen && !hasCoarsePointer)
+  }, [])
 
   // Load existing event data when editing
   useEffect(() => {
@@ -129,20 +148,11 @@ export function EventDialog() {
 
       setIsSubmitting(true)
 
-      // Validate end date/time is after start date/time
-      const startDate = date || eventDialogDate || ''
-      if (endDate && startDate) {
-        if (endDate < startDate) {
-          toast.error('End date must be after start date')
-          setIsSubmitting(false)
-          return
-        }
-        // If same date, check time
-        if (endDate === startDate && time && endTime && endTime <= time) {
-          toast.error('End time must be after start time')
-          setIsSubmitting(false)
-          return
-        }
+      // Validate end time is after start time (same day)
+      if (time && endTime && endTime <= time) {
+        toast.error('End time must be after start time')
+        setIsSubmitting(false)
+        return
       }
 
       try {
@@ -233,7 +243,16 @@ export function EventDialog() {
 
   return (
     <Dialog open={isEventDialogOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        // Prevent automatic focus on inputs when editing (Radix default behavior),
+        // so on mobile/tablet клавиатура не всплывает сама.
+        onOpenAutoFocus={(event) => {
+          if (editingEvent) {
+            event.preventDefault()
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold tracking-tight">
             {editingEvent ? 'Edit Event' : 'New Event'}
@@ -269,13 +288,13 @@ export function EventDialog() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What's happening?"
-              autoFocus
+              autoFocus={shouldAutoFocusTitle && !editingEvent}
               required
               className="text-sm"
             />
           </div>
 
-          {/* Collapsible Time */}
+          {/* Collapsible Time (with optional End Time) */}
           <div className="space-y-2">
             <button
               type="button"
@@ -300,55 +319,18 @@ export function EventDialog() {
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
+                  className="overflow-hidden space-y-3"
                 >
-                  <TimePicker
-                    value={time}
-                    onChange={setTime}
-                    placeholder="Select time"
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                  <div className="space-y-1.5">
+                    <TimePicker
+                      value={time}
+                      onChange={setTime}
+                      placeholder="Select start time"
+                    />
+                  </div>
 
-          {/* Collapsible End Date/Time - shows when date AND time are set */}
-          {(date || eventDialogDate) && time && (
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => toggleSection('end')}
-                className={cn(
-                  'flex items-center gap-2 text-sm font-medium w-full text-left',
-                  'text-muted-foreground hover:text-foreground transition-colors'
-                )}
-              >
-                <ChevronDown 
-                  className={cn(
-                    'h-4 w-4 transition-transform duration-200',
-                    !showEnd && '-rotate-90'
-                  )} 
-                />
-                End Date & Time
-              </button>
-              <AnimatePresence>
-                {showEnd && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden space-y-3"
-                  >
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">End Date</Label>
-                      <DatePicker
-                        value={endDate}
-                        onChange={setEndDate}
-                        placeholder="Select end date"
-                        minDate={parseToDate(date || eventDialogDate || '')}
-                      />
-                    </div>
+                  {/* End time appears only when start time is set */}
+                  {time && (
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">End Time</Label>
                       <TimePicker
@@ -357,11 +339,11 @@ export function EventDialog() {
                         placeholder="Select end time"
                       />
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Collapsible Description */}
           <div className="space-y-2">

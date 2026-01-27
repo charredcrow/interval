@@ -100,14 +100,18 @@ export const useTimelineStore = create<TimelineState>()(
           const events = state.eventsByDate[date]
           if (!events) return state
 
+          // Create a new array with updated event
           const updatedEvents = events.map((event) =>
             event.id === eventId ? { ...event, ...updates } : event
           )
 
+          // Sort events and create new array reference to ensure React re-renders
+          const sortedEvents = sortEvents(updatedEvents)
+
           return {
             eventsByDate: {
               ...state.eventsByDate,
-              [date]: sortEvents(updatedEvents),
+              [date]: sortedEvents,
             },
           }
         })
