@@ -18,21 +18,23 @@ export function TodayWidget() {
   const isTodayWidgetOpen = useUIStore((state) => state.isTodayWidgetOpen)
   const closeTodayWidget = useUIStore((state) => state.closeTodayWidget)
   const openEventDialog = useUIStore((state) => state.openEventDialog)
+  const dayWidgetDate = useUIStore((state) => state.dayWidgetDate)
   
   const today = getTodayString()
-  const events = useTimelineStore((state) => state.eventsByDate[today] ?? EMPTY_EVENTS)
+  const activeDate = dayWidgetDate || today
+  const events = useTimelineStore((state) => state.eventsByDate[activeDate] ?? EMPTY_EVENTS)
   const recurringEvents = useTimelineStore((state) => state.recurringEvents)
   const tags = useTimelineStore((state) => state.tags)
   
   // Filter recurring events for today
   const todayRecurringEvents = useMemo(() => {
-    const dayOfWeek = getDay(parseISO(today)) as DayOfWeek
+    const dayOfWeek = getDay(parseISO(activeDate)) as DayOfWeek
     return recurringEvents.filter((event) => {
       if (!event.enabledDays.includes(dayOfWeek)) return false
-      if (event.repeatUntil && event.repeatUntil < today) return false
+      if (event.repeatUntil && event.repeatUntil < activeDate) return false
       return true
     })
-  }, [today, recurringEvents])
+  }, [activeDate, recurringEvents])
   
   // Combine and sort all events by time
   const allEvents = useMemo(() => {
@@ -54,10 +56,23 @@ export function TodayWidget() {
   const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
   
   const { upcoming, past } = useMemo(() => {
+    // If viewing a past day: все события считаются прошедшими
+    if (activeDate < today) {
+      return { upcoming: [] as typeof allEvents, past: allEvents }
+    }
+
+    // Если будущий день: все события считаются предстоящими
+    if (activeDate > today) {
+      return { upcoming: allEvents, past: [] as typeof allEvents }
+    }
+
+    // Для сегодняшнего дня делим по времени
     const upcoming = allEvents.filter(e => !e.time || e.time >= currentTime)
     const past = allEvents.filter(e => e.time && e.time < currentTime)
     return { upcoming, past }
-  }, [allEvents, currentTime])
+  }, [allEvents, activeDate, today, currentTime])
+
+  const isToday = activeDate === today
 
   return (
     <AnimatePresence>
@@ -84,8 +99,12 @@ export function TodayWidget() {
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b">
                 <div>
-                  <h2 className="text-lg font-semibold">Today</h2>
-                  <p className="text-xs text-muted-foreground">{formatDate(today)}</p>
+                  <h2 className="text-lg font-semibold">
+                    {isToday ? 'Today' : formatDate(activeDate)}
+                  </h2>
+                  {isToday && (
+                    <p className="text-xs text-muted-foreground">{formatDate(today)}</p>
+                  )}
                 </div>
                 <Button variant="ghost" size="icon-sm" onClick={closeTodayWidget}>
                   <X className="h-4 w-4" />
@@ -103,7 +122,7 @@ export function TodayWidget() {
                       size="sm"
                       className="mt-4"
                       onClick={() => {
-                        openEventDialog(today, undefined)
+                        openEventDialog(activeDate, undefined)
                         closeTodayWidget()
                       }}
                     >
@@ -126,7 +145,7 @@ export function TodayWidget() {
                               tags={tags}
                               onClick={() => {
                                 if (!event.isRecurring) {
-                                  openEventDialog(today, event.id)
+                                  openEventDialog(activeDate, event.id)
                                   closeTodayWidget()
                                 }
                               }}
@@ -151,7 +170,7 @@ export function TodayWidget() {
                               isPast
                               onClick={() => {
                                 if (!event.isRecurring) {
-                                  openEventDialog(today, event.id)
+                                  openEventDialog(activeDate, event.id)
                                   closeTodayWidget()
                                 }
                               }}
