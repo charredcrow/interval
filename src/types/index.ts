@@ -33,6 +33,7 @@ export type Event = {
   endTime?: string // Format: "HH:mm" - optional end time
   color?: EventColor // Optional color tag
   tags?: string[] // Array of tag IDs
+  links?: string[] // Attached URL links
   reminder?: ReminderTime // Minutes before event to remind
   reminderSent?: boolean // Whether reminder has been sent
   createdAt: string // ISO date string

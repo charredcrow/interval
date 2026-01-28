@@ -199,6 +199,21 @@ export function formatTimeDisplay(time: string): string {
 }
 
 /**
+ * Format time according to user preference.
+ * Internal time format is always 'HH:mm'.
+ */
+export function formatTimeForUser(time: string, format: '12h' | '24h'): string {
+  if (format === '24h') {
+    // Ensure HH:mm with zero-padded hours
+    const [hours, minutes] = time.split(':').map(Number)
+    const hh = hours.toString().padStart(2, '0')
+    const mm = minutes.toString().padStart(2, '0')
+    return `${hh}:${mm}`
+  }
+  return formatTimeDisplay(time)
+}
+
+/**
  * Parse date string (YYYY-MM-DD) to Date object
  */
 export function parseToDate(dateStr: string): Date | undefined {

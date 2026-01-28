@@ -4,6 +4,7 @@ import type { ViewMode } from '@/types'
 import { getTodayString } from '@/utils/date'
 
 export type Theme = 'light' | 'dark'
+export type TimeFormat = '12h' | '24h'
 
 interface UIState {
   // Current view mode
@@ -38,6 +39,7 @@ interface UIState {
   // Settings
   hideEmptyDays: boolean
   theme: Theme
+  timeFormat: TimeFormat
   
   // Actions
   setViewMode: (mode: ViewMode) => void
@@ -54,6 +56,7 @@ interface UIState {
   openEventDialogWithDatePicker: () => void
   setTheme: (theme: Theme) => void
   toggleTheme: () => void
+  setTimeFormat: (format: TimeFormat) => void
   
   // Recurring event dialog actions
   openRecurringEventDialog: (eventId?: string) => void
@@ -87,6 +90,18 @@ export const useUIStore = create<UIState>()(
       dayWidgetDate: null,
       hideEmptyDays: false,
       theme: 'light',
+      timeFormat: (() => {
+        if (typeof window === 'undefined' || typeof Intl === 'undefined') {
+          return '12h' as TimeFormat
+        }
+        try {
+          const formatter = new Intl.DateTimeFormat(undefined, { hour: 'numeric' })
+          const opts = formatter.resolvedOptions()
+          return opts.hour12 ? '12h' : '24h'
+        } catch {
+          return '12h' as TimeFormat
+        }
+      })(),
 
       setViewMode: (mode) => {
         set({ viewMode: mode })
@@ -175,6 +190,10 @@ export const useUIStore = create<UIState>()(
         })
       },
 
+      setTimeFormat: (format) => {
+        set({ timeFormat: format })
+      },
+
       openRecurringEventDialog: (eventId) => {
         set({
           isRecurringEventDialogOpen: true,
@@ -214,6 +233,7 @@ export const useUIStore = create<UIState>()(
       partialize: (state) => ({
         theme: state.theme,
         hideEmptyDays: state.hideEmptyDays,
+        timeFormat: state.timeFormat,
       }),
     }
   )

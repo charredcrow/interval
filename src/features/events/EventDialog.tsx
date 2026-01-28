@@ -49,6 +49,7 @@ export function EventDialog() {
   const [endTime, setEndTime] = useState('')
   const [color, setColor] = useState<EventColor | undefined>(undefined)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [links, setLinks] = useState<string[]>([])
   const [reminder, setReminder] = useState<ReminderTime | undefined>(undefined)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [newTagName, setNewTagName] = useState('')
@@ -102,6 +103,7 @@ export function EventDialog() {
         setEndTime(event.endTime || '')
         setColor(event.color)
         setSelectedTags(event.tags || [])
+        setLinks(event.links || [])
         setReminder(event.reminder)
         setDate(eventDialogDate)
         // All sections closed by default, even when editing
@@ -116,6 +118,7 @@ export function EventDialog() {
       setEndTime('')
       setColor(undefined)
       setSelectedTags([])
+      setLinks([])
       setReminder(undefined)
       setDate(eventDialogDate || getTodayString())
       // All sections closed by default
@@ -166,6 +169,7 @@ export function EventDialog() {
             description: description.trim() || undefined,
             color,
             tags: selectedTags.length > 0 ? selectedTags : undefined,
+            links: links.length > 0 ? links : undefined,
             reminder,
           })
           toast.success('Event updated')
@@ -179,6 +183,7 @@ export function EventDialog() {
             description: description.trim() || undefined,
             color,
             tags: selectedTags.length > 0 ? selectedTags : undefined,
+            links: links.length > 0 ? links : undefined,
             reminder,
           })
           toast.success('Event added')
@@ -205,6 +210,7 @@ export function EventDialog() {
       color,
       selectedTags,
       reminder,
+      links,
       eventDialogDate,
       editingEvent,
       addEvent,
@@ -376,10 +382,54 @@ export function EventDialog() {
                     id="description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
+                    onBlur={() => {
+                      const urlRegex = /(https?:\/\/[^\s]+)/g
+                      const found: string[] = []
+                      const cleaned = (description || '').replace(urlRegex, (match) => {
+                        found.push(match)
+                        return ''
+                      })
+                      if (found.length) {
+                        setDescription(cleaned.trim())
+                        setLinks((prev) => Array.from(new Set([...prev, ...found])))
+                      }
+                    }}
                     placeholder="Add more details..."
                     rows={3}
-                    className="text-sm resize-none"
+                    className="text-sm resize-none max-h-40 overflow-y-auto"
                   />
+                  {links.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {links.map((url) => {
+                        let label = url
+                        try {
+                          const parsed = new URL(url)
+                          label = parsed.hostname
+                        } catch {
+                          // ignore parse errors, fallback to raw url
+                        }
+                        return (
+                          <div
+                            key={url}
+                            className="flex items-center gap-1 rounded-full border bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground max-w-full"
+                          >
+                            <span className="truncate max-w-[160px] sm:max-w-[220px]">
+                              {label}
+                            </span>
+                            <button
+                              type="button"
+                              className="ml-1 text-[10px] text-muted-foreground hover:text-foreground"
+                              onClick={() =>
+                                setLinks((prev) => prev.filter((l) => l !== url))
+                              }
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

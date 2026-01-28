@@ -34,7 +34,7 @@ import { DateRangePicker, type DateRangeValue } from '@/components/ui/date-range
 import { useTimelineStore } from '@/store/timelineStore'
 import { useUIStore } from '@/store/uiStore'
 import { useTodoStore } from '@/store/todoStore'
-import { getTodayString, formatDate, formatTimeDisplay } from '@/utils/date'
+import { getTodayString, formatDate, formatTimeForUser } from '@/utils/date'
 import { getEventColor } from '@/components/ui/color-picker'
 import { cn } from '@/utils/cn'
 import { toast } from 'sonner'
@@ -78,6 +78,8 @@ export function QuickAdd() {
     openRecurringEventDialog,
     openTodoPanel,
     openTodayWidget,
+    timeFormat,
+    setTimeFormat,
   } = useUIStore()
 
   // Get dates with events for search
@@ -598,7 +600,7 @@ export function QuickAdd() {
                                       <div className="flex items-center gap-1">
                                         <Clock className="h-3 w-3 text-muted-foreground" />
                                         <span className="text-xs text-muted-foreground">
-                                          {formatTimeDisplay(event.time)}
+                                          {formatTimeForUser(event.time, timeFormat)}
                                         </span>
                                       </div>
                                     </>
@@ -636,7 +638,7 @@ export function QuickAdd() {
                                       {event.time && (
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                           <Clock className="h-3.5 w-3.5" />
-                                          <span>{formatTimeDisplay(event.time)}</span>
+                                          <span>{formatTimeForUser(event.time, timeFormat)}</span>
                                         </div>
                                       )}
                                     </div>
@@ -797,7 +799,7 @@ export function QuickAdd() {
                                               <div className="flex items-center gap-1.5 mt-0.5">
                                                 <Clock className="h-3 w-3 text-muted-foreground" />
                                                 <span className="text-xs text-muted-foreground">
-                                                  {formatTimeDisplay(event.time)}
+                                                  {formatTimeForUser(event.time, timeFormat)}
                                                 </span>
                                               </div>
                                             )}
@@ -833,7 +835,7 @@ export function QuickAdd() {
                                                   {event.time && (
                                                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                                       <Clock className="h-3.5 w-3.5" />
-                                                      <span>{formatTimeDisplay(event.time)}</span>
+                                                      <span>{formatTimeForUser(event.time, timeFormat)}</span>
                                                     </div>
                                                   )}
                                                 </div>
@@ -979,27 +981,30 @@ export function QuickAdd() {
                 sideOffset={8}
               >
                 <div className="space-y-1">
-                  {/* New Event */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleNewEvent}
-                    className="w-full justify-start gap-2 font-normal"
-                  >
-                    <CalendarPlus className="h-4 w-4" />
-                    New Event
-                  </Button>
-
-                  {/* New Recurring Event */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleNewRecurringEvent}
-                    className="w-full justify-start gap-2 font-normal"
-                  >
-                    <Repeat className="h-4 w-4" />
-                    Recurring Event
-                  </Button>
+                  {/* Create section: Event / Recurring */}
+                  <div className="px-2 py-1.5">
+                    <p className="text-xs text-muted-foreground mb-2">Create</p>
+                    <div className="flex items-center rounded-lg border border-border bg-muted/30 p-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleNewEvent}
+                        className="flex-1 h-7 text-xs gap-1.5 font-medium justify-center transition-all"
+                      >
+                        <CalendarPlus className="h-3.5 w-3.5" />
+                        Event
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleNewRecurringEvent}
+                        className="flex-1 h-7 text-xs gap-1.5 font-medium justify-center transition-all"
+                      >
+                        <Repeat className="h-3.5 w-3.5" />
+                        Recurring
+                      </Button>
+                    </div>
+                  </div>
 
                   {/* Today Widget */}
                   <Button
@@ -1076,66 +1081,102 @@ export function QuickAdd() {
 
                   <div className="h-px bg-border my-2" />
 
-                  {/* Theme Toggle */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { toggleTheme(); setIsMenuOpen(false) }}
-                    className="w-full justify-start gap-2 font-normal"
-                  >
-                    {theme === 'dark' ? (
-                      <Sun className="h-4 w-4" />
-                    ) : (
-                      <Moon className="h-4 w-4" />
-                    )}
-                    {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-                  </Button>
-
-                  <div className="h-px bg-border my-2" />
-
-                  {/* Hide Empty Days */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleToggleHideEmpty}
-                    className="w-full justify-start gap-2 font-normal"
-                  >
-                    {hideEmptyDays ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                    {hideEmptyDays ? 'Show empty days' : 'Hide empty days'}
-                  </Button>
-
-                  <div className="h-px bg-border my-2" />
-
-                  {/* Data section */}
+                  {/* Display section: Theme + Hide empty days + Time format */}
                   <div className="px-2 py-1.5">
-                    <p className="text-xs text-muted-foreground mb-2">Data</p>
+                    <p className="text-xs text-muted-foreground mb-2">Display</p>
+                    <div className="space-y-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { toggleTheme(); setIsMenuOpen(false) }}
+                        className="w-full justify-start gap-2 font-normal"
+                      >
+                        {theme === 'dark' ? (
+                          <Sun className="h-4 w-4" />
+                        ) : (
+                          <Moon className="h-4 w-4" />
+                        )}
+                        {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleToggleHideEmpty}
+                        className="w-full justify-start gap-2 font-normal"
+                      >
+                        {hideEmptyDays ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                        {hideEmptyDays ? 'Show empty days' : 'Hide empty days'}
+                      </Button>
+
+                      {/* Time format toggle */}
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[11px] text-muted-foreground">
+                          Time format
+                        </span>
+                        <div className="flex items-center rounded-full border border-border bg-muted/30 p-0.5 gap-0.5">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setTimeFormat('12h')}
+                            className={cn(
+                              'h-6 px-2 text-[10px] rounded-full',
+                              timeFormat === '12h'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
+                            )}
+                          >
+                            12h
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setTimeFormat('24h')}
+                            className={cn(
+                              'h-6 px-2 text-[10px] rounded-full',
+                              timeFormat === '24h'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
+                            )}
+                          >
+                            24h
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Export Data */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleExportData}
-                    className="w-full justify-start gap-2 font-normal"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export Data
-                  </Button>
+                  <div className="h-px bg-border my-2" />
 
-                  {/* Import Data */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleImportData}
-                    className="w-full justify-start gap-2 font-normal"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Import Data
-                  </Button>
+                  {/* Data section: Export / Import */}
+                  <div className="px-2 py-1.5">
+                    <p className="text-xs text-muted-foreground mb-2">Data</p>
+                    <div className="flex items-center rounded-lg border border-border bg-muted/30 p-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleExportData}
+                        className="flex-1 h-7 text-xs gap-1.5 font-medium justify-center transition-all"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Export
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleImportData}
+                        className="flex-1 h-7 text-xs gap-1.5 font-medium justify-center transition-all"
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                        Import
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>

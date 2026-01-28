@@ -16,7 +16,8 @@ import {
   DrawerTrigger,
 } from './drawer'
 import { cn } from '@/utils/cn'
-
+import { useUIStore } from '@/store/uiStore'
+import { formatTimeForUser } from '@/utils/date'
 interface TimePickerProps {
   value?: string // Format: "HH:mm"
   onChange: (value: string) => void
@@ -30,14 +31,6 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')
 
 // Generate minutes array (00-55, step 5)
 const MINUTES = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'))
-
-function formatTimeDisplay(time: string): string {
-  if (!time) return ''
-  const [hours, minutes] = time.split(':').map(Number)
-  const period = hours >= 12 ? 'PM' : 'AM'
-  const displayHours = hours % 12 || 12
-  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`
-}
 
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false)
@@ -58,9 +51,10 @@ interface TimePickerContentProps {
   value?: string
   onChange: (value: string) => void
   onClose?: () => void
+  timeFormat: '12h' | '24h'
 }
 
-function TimePickerContent({ value, onChange, onClose }: TimePickerContentProps) {
+function TimePickerContent({ value, onChange, onClose, timeFormat }: TimePickerContentProps) {
   const [selectedHour, setSelectedHour] = useState<string>(() => {
     if (value) {
       const [h] = value.split(':')
@@ -127,8 +121,11 @@ function TimePickerContent({ value, onChange, onClose }: TimePickerContentProps)
           >
             <div className="p-2">
               {HOURS.map((hour) => {
-                const displayHour = parseInt(hour) % 12 || 12
-                const period = parseInt(hour) >= 12 ? 'PM' : 'AM'
+                const hourNumber = parseInt(hour, 10)
+                const displayHour =
+                  timeFormat === '24h'
+                    ? hour // 00–23
+                    : `${hourNumber % 12 || 12} ${hourNumber >= 12 ? 'PM' : 'AM'}`
                 return (
                   <button
                     key={hour}
@@ -139,7 +136,7 @@ function TimePickerContent({ value, onChange, onClose }: TimePickerContentProps)
                       selectedHour === hour && 'bg-foreground text-background hover:bg-foreground'
                     )}
                   >
-                    {displayHour} {period}
+                    {displayHour}
                   </button>
                 )
               })}
@@ -183,7 +180,7 @@ function TimePickerContent({ value, onChange, onClose }: TimePickerContentProps)
           <div className="flex items-center justify-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span className="text-lg font-medium">
-              {formatTimeDisplay(`${selectedHour}:${selectedMinute}`)}
+              {formatTimeForUser(`${selectedHour}:${selectedMinute}`, timeFormat)}
             </span>
           </div>
         </div>
@@ -201,8 +198,9 @@ export function TimePicker({
 }: TimePickerProps) {
   const [open, setOpen] = useState(false)
   const isMobile = useMediaQuery('(max-width: 640px)')
+  const timeFormat = useUIStore((state) => state.timeFormat)
 
-  const displayValue = value ? formatTimeDisplay(value) : placeholder
+  const displayValue = value ? formatTimeForUser(value, timeFormat) : placeholder
 
   const handleClear = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -249,6 +247,7 @@ export function TimePicker({
             value={value}
             onChange={onChange}
             onClose={() => setOpen(false)}
+            timeFormat={timeFormat}
           />
           <DrawerFooter className="pt-2">
             <DrawerClose asChild>
@@ -298,6 +297,7 @@ export function TimePicker({
           value={value}
           onChange={onChange}
           onClose={() => setOpen(false)}
+          timeFormat={timeFormat}
         />
       </PopoverContent>
     </Popover>

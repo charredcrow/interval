@@ -4,8 +4,9 @@ import { Clock, Pencil, Trash2, Repeat } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getEventColor } from '@/components/ui/color-picker'
+import { useUIStore } from '@/store/uiStore'
 import type { RecurringEvent } from '@/types'
-import { formatTimeDisplay } from '@/utils/date'
+import { formatTimeForUser } from '@/utils/date'
 import { cn } from '@/utils/cn'
 
 interface RecurringEventCardProps {
@@ -20,6 +21,7 @@ export const RecurringEventCard = memo(function RecurringEventCard({
   onDelete,
 }: RecurringEventCardProps) {
   const eventColor = getEventColor(event.color)
+  const timeFormat = useUIStore((state) => state.timeFormat)
 
   return (
     <motion.div
@@ -58,7 +60,7 @@ export const RecurringEventCard = memo(function RecurringEventCard({
               className="gap-1 text-[10px] font-medium px-1.5 py-0"
             >
               <Clock className="h-2.5 w-2.5" />
-              {formatTimeDisplay(event.time)}
+              {formatTimeForUser(event.time, timeFormat)}
             </Badge>
           )}
         </div>

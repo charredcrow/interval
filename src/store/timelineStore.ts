@@ -78,6 +78,7 @@ export const useTimelineStore = create<TimelineState>()(
           endTime: eventData.endTime,
           color: eventData.color,
           tags: eventData.tags,
+          links: eventData.links,
           reminder: eventData.reminder,
           createdAt: new Date().toISOString(),
         }

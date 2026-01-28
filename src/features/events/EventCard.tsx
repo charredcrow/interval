@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button'
 import { getEventColor } from '@/components/ui/color-picker'
 import { useDragStore } from '@/store/dragStore'
 import { useTimelineStore } from '@/store/timelineStore'
+import { useUIStore } from '@/store/uiStore'
 import type { Event } from '@/types'
-import { formatTimeDisplay, formatDate } from '@/utils/date'
+import { formatTimeForUser, formatDate } from '@/utils/date'
 import { cn } from '@/utils/cn'
 
 interface EventCardProps {
@@ -28,6 +29,7 @@ export const EventCard = memo(function EventCard({
   const startDrag = useDragStore((state) => state.startDrag)
   const endDrag = useDragStore((state) => state.endDrag)
   const draggedEvent = useDragStore((state) => state.draggedEvent)
+  const timeFormat = useUIStore((state) => state.timeFormat)
   
   const isDragging = draggedEvent?.eventId === event.id
   
@@ -82,9 +84,9 @@ export const EventCard = memo(function EventCard({
                 className="gap-1 text-[10px] font-medium px-1.5 py-0"
               >
                 <Clock className="h-2.5 w-2.5" />
-                {formatTimeDisplay(event.time)}
+                {formatTimeForUser(event.time, timeFormat)}
                 {/* When end is the same day (or no explicit endDate), show a pure time range */}
-                {event.endTime && (!event.endDate || isSameDayEnd) && ` – ${formatTimeDisplay(event.endTime)}`}
+                {event.endTime && (!event.endDate || isSameDayEnd) && ` – ${formatTimeForUser(event.endTime, timeFormat)}`}
               </Badge>
             )}
             {/* Only show separate end date badge when end date is different from the event date */}
@@ -95,7 +97,7 @@ export const EventCard = memo(function EventCard({
               >
                 <CalendarRange className="h-2.5 w-2.5" />
                 → {formatDate(event.endDate!).split(',')[0]}
-                {event.endTime && `, ${formatTimeDisplay(event.endTime)}`}
+                {event.endTime && `, ${formatTimeForUser(event.endTime, timeFormat)}`}
               </Badge>
             )}
           </div>
@@ -134,6 +136,33 @@ export const EventCard = memo(function EventCard({
           <p className="mt-1 text-[10px] text-muted-foreground line-clamp-1 leading-relaxed">
             {event.description}
           </p>
+        )}
+
+        {/* Attached links */}
+        {event.links && event.links.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {event.links.map((url) => {
+              let label = url
+              try {
+                const parsed = new URL(url)
+                label = parsed.hostname
+              } catch {
+                // ignore parse errors, fallback to raw url
+              }
+              return (
+                <a
+                  key={url}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[9px] px-1.5 py-0.5 rounded-full border bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground truncate max-w-[160px]"
+                  title={url}
+                >
+                  {label}
+                </a>
+              )
+            })}
+          </div>
         )}
 
         {/* Hover actions - Hidden on mobile, visible on hover for desktop */}
@@ -178,6 +207,10 @@ export const EventCard = memo(function EventCard({
     prevProps.event.title === nextProps.event.title &&
     prevProps.event.description === nextProps.event.description &&
     prevProps.event.color === nextProps.event.color &&
+    JSON.stringify(prevProps.event.tags || []) ===
+      JSON.stringify(nextProps.event.tags || []) &&
+    JSON.stringify(prevProps.event.links || []) ===
+      JSON.stringify(nextProps.event.links || []) &&
     prevProps.date === nextProps.date
   )
 })

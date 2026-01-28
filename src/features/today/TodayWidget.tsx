@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useTimelineStore } from '@/store/timelineStore'
 import { useUIStore } from '@/store/uiStore'
-import { getTodayString, formatTimeDisplay, formatDate } from '@/utils/date'
+import { getTodayString, formatTimeForUser, formatDate } from '@/utils/date'
 import { getEventColor } from '@/components/ui/color-picker'
 import { cn } from '@/utils/cn'
 import { parseISO, getDay } from 'date-fns'
@@ -19,6 +19,7 @@ export function TodayWidget() {
   const closeTodayWidget = useUIStore((state) => state.closeTodayWidget)
   const openEventDialog = useUIStore((state) => state.openEventDialog)
   const dayWidgetDate = useUIStore((state) => state.dayWidgetDate)
+  const timeFormat = useUIStore((state) => state.timeFormat)
   
   const today = getTodayString()
   const activeDate = dayWidgetDate || today
@@ -143,6 +144,7 @@ export function TodayWidget() {
                               key={event.id}
                               event={event}
                               tags={tags}
+                              timeFormat={timeFormat}
                               onClick={() => {
                                 if (!event.isRecurring) {
                                   openEventDialog(activeDate, event.id)
@@ -167,6 +169,7 @@ export function TodayWidget() {
                               key={event.id}
                               event={event}
                               tags={tags}
+                              timeFormat={timeFormat}
                               isPast
                               onClick={() => {
                                 if (!event.isRecurring) {
@@ -210,11 +213,12 @@ interface TodayEventCardProps {
     isRecurring: boolean
   }
   tags: { id: string; name: string; color: string }[]
+  timeFormat: '12h' | '24h'
   isPast?: boolean
   onClick?: () => void
 }
 
-function TodayEventCard({ event, tags, isPast, onClick }: TodayEventCardProps) {
+function TodayEventCard({ event, tags, timeFormat, isPast, onClick }: TodayEventCardProps) {
   const eventColor = getEventColor(event.color as any)
   const eventTags = event.tags?.map(id => tags.find(t => t.id === id)).filter(Boolean) || []
   
@@ -235,7 +239,7 @@ function TodayEventCard({ event, tags, isPast, onClick }: TodayEventCardProps) {
         <div className="shrink-0 w-12 text-right">
           {event.time ? (
             <span className="text-xs font-medium">
-              {formatTimeDisplay(event.time).replace(' ', '\n')}
+              {formatTimeForUser(event.time, timeFormat).replace(' ', '\n')}
             </span>
           ) : (
             <span className="text-xs text-muted-foreground">All day</span>
@@ -260,7 +264,7 @@ function TodayEventCard({ event, tags, isPast, onClick }: TodayEventCardProps) {
             <div className="flex items-center gap-1 mt-1 ml-5">
               <Clock className="h-3 w-3 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">
-                {formatTimeDisplay(event.time)} – {formatTimeDisplay(event.endTime)}
+                {formatTimeForUser(event.time, timeFormat)} – {formatTimeForUser(event.endTime, timeFormat)}
               </span>
             </div>
           )}
