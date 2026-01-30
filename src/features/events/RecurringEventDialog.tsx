@@ -53,9 +53,18 @@ export function RecurringEventDialog() {
   const [enabledDays, setEnabledDays] = useState<DayOfWeek[]>([0, 1, 2, 3, 4, 5, 6])
   const [repeatUntil, setRepeatUntil] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   
   // Collapsible sections state - accordion behavior: only one open at a time
   const [openSection, setOpenSection] = useState<string | null>(null)
+  
+  const clearFieldError = useCallback((field: string) => {
+    setFieldErrors((prev) => {
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
+  }, [])
   
   // Helper function for accordion behavior
   const toggleSection = (section: string) => {
@@ -70,6 +79,7 @@ export function RecurringEventDialog() {
 
   // Load existing recurring event data when editing
   useEffect(() => {
+    setFieldErrors({})
     if (editingRecurringEventId) {
       const event = recurringEvents.find((e) => e.id === editingRecurringEventId)
       if (event) {
@@ -98,6 +108,7 @@ export function RecurringEventDialog() {
   }, [editingRecurringEventId, recurringEvents])
 
   const toggleDay = useCallback((day: DayOfWeek) => {
+    clearFieldError('enabledDays')
     setEnabledDays((prev) => {
       if (prev.includes(day)) {
         // Don't allow disabling all days
@@ -109,37 +120,27 @@ export function RecurringEventDialog() {
       }
       return [...prev, day].sort((a, b) => a - b)
     })
-  }, [])
+  }, [clearFieldError])
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
+      const errors: Record<string, string> = {}
 
-      if (!title.trim()) {
-        toast.error('Title is required')
-        return
-      }
-
-      if (time && !isValidTimeString(time)) {
-        toast.error('Invalid start time format. Use HH:mm')
-        return
-      }
-
-      if (endTime && !isValidTimeString(endTime)) {
-        toast.error('Invalid end time format. Use HH:mm')
-        return
-      }
-
+      if (!title.trim()) errors.title = 'Title is required'
+      if (time && !isValidTimeString(time)) errors.time = 'Invalid start time. Use HH:mm'
+      if (endTime && !isValidTimeString(endTime)) errors.endTime = 'Invalid end time. Use HH:mm'
       if (time && endTime && endTime <= time) {
-        toast.error('End time must be after start time')
+        errors.endTime = errors.endTime || 'End time must be after start time'
+      }
+      if (enabledDays.length === 0) errors.enabledDays = 'Select at least one day'
+
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors)
+        toast.error(Object.values(errors)[0])
         return
       }
-
-      if (enabledDays.length === 0) {
-        toast.error('At least one day must be selected')
-        return
-      }
-
+      setFieldErrors({})
       setIsSubmitting(true)
 
       try {
@@ -228,12 +229,15 @@ export function RecurringEventDialog() {
             <Input
               id="recurring-title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); clearFieldError('title') }}
               placeholder="Daily standup, Morning routine..."
               autoFocus
               required
-              className="text-sm"
+              className={cn('text-sm', fieldErrors.title && 'border-destructive')}
             />
+            {fieldErrors.title && (
+              <p className="text-xs text-destructive">{fieldErrors.title}</p>
+            )}
           </div>
 
           {/* Collapsible Time */}
@@ -265,9 +269,12 @@ export function RecurringEventDialog() {
                 >
                   <TimePicker
                     value={time}
-                    onChange={setTime}
+                    onChange={(v) => { setTime(v); clearFieldError('time') }}
                     placeholder="Select start time"
                   />
+                  {fieldErrors.time && (
+                    <p className="text-xs text-destructive mt-1">{fieldErrors.time}</p>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -303,9 +310,12 @@ export function RecurringEventDialog() {
                   >
                     <TimePicker
                       value={endTime}
-                      onChange={setEndTime}
+                      onChange={(v) => { setEndTime(v); clearFieldError('endTime') }}
                       placeholder="Select end time"
                     />
+                    {fieldErrors.endTime && (
+                      <p className="text-xs text-destructive mt-1">{fieldErrors.endTime}</p>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -316,6 +326,9 @@ export function RecurringEventDialog() {
             <Label className="text-sm font-medium">
               Active Days
             </Label>
+            {fieldErrors.enabledDays && (
+              <p className="text-xs text-destructive">{fieldErrors.enabledDays}</p>
+            )}
             <p className="text-xs text-muted-foreground mb-2">
               Select which days of the week this event should appear
             </p>

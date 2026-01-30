@@ -1,6 +1,7 @@
 import { Toaster } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef } from 'react'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Header } from '@/components/Header'
 import { QuickAdd } from '@/components/QuickAdd'
 import { TimelineView } from '@/features/timeline'
@@ -67,9 +68,10 @@ function App() {
   }, [])
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden touch-none">
-      {/* Header with navigation */}
-      <Header />
+    <ErrorBoundary>
+      <div className="h-screen bg-background flex flex-col overflow-hidden touch-none">
+        {/* Header with navigation */}
+        <Header />
 
       {/* Main content */}
       <main className="flex-1 relative pt-10 pb-24 overflow-hidden bg-background">
@@ -127,7 +129,8 @@ function App() {
           },
         }}
       />
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }
 

@@ -200,10 +200,12 @@ export const EventCard = memo(function EventCard({
     </motion.div>
   )
 }, (prevProps, nextProps) => {
-  // Re-render when key event fields change (including color so UI updates)
+  // Re-render when key event fields change (including color, endTime so UI updates)
   return (
     prevProps.event.id === nextProps.event.id &&
     prevProps.event.time === nextProps.event.time &&
+    prevProps.event.endTime === nextProps.event.endTime &&
+    prevProps.event.endDate === nextProps.event.endDate &&
     prevProps.event.title === nextProps.event.title &&
     prevProps.event.description === nextProps.event.description &&
     prevProps.event.color === nextProps.event.color &&

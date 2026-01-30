@@ -56,9 +56,18 @@ export function EventDialog() {
   const [newTagColor, setNewTagColor] = useState<EventColor>('blue')
   const [showNewTagForm, setShowNewTagForm] = useState(false)
   const [shouldAutoFocusTitle, setShouldAutoFocusTitle] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   
   // Collapsible sections state - accordion behavior: only one open at a time
   const [openSection, setOpenSection] = useState<string | null>(null)
+  
+  const clearFieldError = useCallback((field: string) => {
+    setFieldErrors((prev) => {
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
+  }, [])
   
   // Helper functions for accordion behavior
   const toggleSection = (section: string) => {
@@ -92,6 +101,7 @@ export function EventDialog() {
 
   // Load existing event data when editing
   useEffect(() => {
+    setFieldErrors({})
     if (editingEvent && eventDialogDate) {
       const events = eventsByDate[eventDialogDate] || []
       const event = events.find((e) => e.id === editingEvent.id)
@@ -131,32 +141,31 @@ export function EventDialog() {
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
+      const errors: Record<string, string> = {}
 
       if (!title.trim()) {
-        toast.error('Title is required')
-        return
+        errors.title = 'Title is required'
       }
-
       if (time && !isValidTimeString(time)) {
-        toast.error('Invalid start time format. Use HH:mm')
-        return
+        errors.time = 'Invalid start time. Use HH:mm'
       }
-
       if (endTime && !isValidTimeString(endTime)) {
-        toast.error('Invalid end time format. Use HH:mm')
-        return
+        errors.endTime = 'Invalid end time. Use HH:mm'
       }
-
-      if (!date) return
-
-      setIsSubmitting(true)
-
-      // Validate end time is after start time (same day)
+      if (!editingEvent && !date) {
+        errors.date = 'Date is required'
+      }
       if (time && endTime && endTime <= time) {
-        toast.error('End time must be after start time')
-        setIsSubmitting(false)
+        errors.endTime = errors.endTime || 'End time must be after start time'
+      }
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors)
+        const first = Object.values(errors)[0]
+        if (first) toast.error(first)
         return
       }
+      setFieldErrors({})
+      setIsSubmitting(true)
 
       try {
         if (editingEvent && eventDialogDate) {
@@ -279,9 +288,12 @@ export function EventDialog() {
               </Label>
               <DatePicker
                 value={date}
-                onChange={setDate}
+                onChange={(v) => { setDate(v); clearFieldError('date') }}
                 placeholder="Select date"
               />
+              {fieldErrors.date && (
+                <p className="text-xs text-destructive">{fieldErrors.date}</p>
+              )}
             </div>
           )}
 
@@ -292,12 +304,15 @@ export function EventDialog() {
             <Input
               id="title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); clearFieldError('title') }}
               placeholder="What's happening?"
               autoFocus={shouldAutoFocusTitle && !editingEvent}
               required
-              className="text-sm"
+              className={cn('text-sm', fieldErrors.title && 'border-destructive')}
             />
+            {fieldErrors.title && (
+              <p className="text-xs text-destructive">{fieldErrors.title}</p>
+            )}
           </div>
 
           {/* Collapsible Time (with optional End Time) */}
@@ -330,9 +345,12 @@ export function EventDialog() {
                   <div className="space-y-1.5">
                     <TimePicker
                       value={time}
-                      onChange={setTime}
+                      onChange={(v) => { setTime(v); clearFieldError('time') }}
                       placeholder="Select start time"
                     />
+                    {fieldErrors.time && (
+                      <p className="text-xs text-destructive">{fieldErrors.time}</p>
+                    )}
                   </div>
 
                   {/* End time appears only when start time is set */}
@@ -341,9 +359,12 @@ export function EventDialog() {
                       <Label className="text-xs text-muted-foreground">End Time</Label>
                       <TimePicker
                         value={endTime}
-                        onChange={setEndTime}
+                        onChange={(v) => { setEndTime(v); clearFieldError('endTime') }}
                         placeholder="Select end time"
                       />
+                      {fieldErrors.endTime && (
+                        <p className="text-xs text-destructive">{fieldErrors.endTime}</p>
+                      )}
                     </div>
                   )}
                 </motion.div>

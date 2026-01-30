@@ -8,15 +8,6 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from './popover'
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from './drawer'
 import { cn } from '@/utils/cn'
 
 interface DatePickerProps {
@@ -155,56 +146,37 @@ export function DatePicker({
     setOpen(false)
   }, [onChange])
 
-  // Mobile: use Drawer
+  // Mobile: native date input so OS opens date picker and keyboard
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={setOpen}>
-        <div className="relative w-full">
-          <DrawerTrigger asChild>
-            <Button
-              variant="outline"
-              disabled={disabled}
-              className={cn(
-                'w-full justify-start text-left font-normal pr-8',
-                !value && 'text-muted-foreground',
-                className
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {displayValue}
-            </Button>
-          </DrawerTrigger>
-          {value && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
-              onClick={handleClear}
-            >
-              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-            </Button>
+      <div className="relative w-full">
+        <input
+          type="date"
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          min={minDate ? format(minDate, 'yyyy-MM-dd') : undefined}
+          max={maxDate ? format(maxDate, 'yyyy-MM-dd') : undefined}
+          className={cn(
+            'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            'disabled:cursor-not-allowed disabled:opacity-50 pr-8',
+            !value && 'text-muted-foreground',
+            className
           )}
-        </div>
-        <DrawerContent>
-          <DrawerHeader className="text-left">
-            <DrawerTitle>Select Date</DrawerTitle>
-          </DrawerHeader>
-          <div className="overflow-x-auto">
-            <DatePickerContent
-              value={value}
-              onChange={onChange}
-              onClose={() => setOpen(false)}
-              minDate={minDate}
-              maxDate={maxDate}
-            />
-          </div>
-          <DrawerFooter className="pt-2">
-            <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+        />
+        {value && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+            onClick={handleClear}
+          >
+            <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+          </Button>
+        )}
+      </div>
     )
   }
 

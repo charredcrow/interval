@@ -21,7 +21,8 @@ import {
   Pencil,
   Download,
   Upload,
-  Sunrise
+  Sunrise,
+  Loader2
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -52,6 +53,7 @@ export function QuickAdd() {
   const [showFilters, setShowFilters] = useState(false)
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set())
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
+  const [isImporting, setIsImporting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -300,6 +302,7 @@ export function QuickAdd() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    setIsImporting(true)
     const reader = new FileReader()
     reader.onload = (event) => {
       try {
@@ -343,7 +346,13 @@ export function QuickAdd() {
         }, 1000)
       } catch {
         toast.error('Failed to import data. Please check the file format.')
+      } finally {
+        setIsImporting(false)
       }
+    }
+    reader.onerror = () => {
+      toast.error('Failed to read file.')
+      setIsImporting(false)
     }
     
     reader.readAsText(file)
@@ -1170,9 +1179,14 @@ export function QuickAdd() {
                         variant="ghost"
                         size="sm"
                         onClick={handleImportData}
+                        disabled={isImporting}
                         className="flex-1 h-7 text-xs gap-1.5 font-medium justify-center transition-all"
                       >
-                        <Upload className="h-3.5 w-3.5" />
+                        {isImporting ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="h-3.5 w-3.5" />
+                        )}
                         Import
                       </Button>
                     </div>
