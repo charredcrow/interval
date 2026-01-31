@@ -139,7 +139,7 @@ export function EventDialog() {
   }, [editingEvent, eventDialogDate, eventsByDate])
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault()
       const errors: Record<string, string> = {}
 
@@ -169,8 +169,7 @@ export function EventDialog() {
 
       try {
         if (editingEvent && eventDialogDate) {
-          // Update existing event
-          updateEvent(eventDialogDate, editingEvent.id, {
+          await updateEvent(eventDialogDate, editingEvent.id, {
             title: title.trim(),
             time: time || undefined,
             endDate: endDate || undefined,
@@ -183,8 +182,7 @@ export function EventDialog() {
           })
           toast.success('Event updated')
         } else {
-          // Create new event
-          addEvent(date, {
+          await addEvent(date, {
             title: title.trim(),
             time: time || undefined,
             endDate: endDate || undefined,
@@ -196,12 +194,10 @@ export function EventDialog() {
             reminder,
           })
           toast.success('Event added')
-          // Navigate to the date if it's not today
           if (date !== getTodayString()) {
             navigateToDate(date)
           }
         }
-
         closeEventDialog()
       } catch {
         toast.error('Failed to save event')
@@ -238,15 +234,15 @@ export function EventDialog() {
     [closeEventDialog]
   )
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (editingEvent && eventDialogDate) {
-      deleteEvent(eventDialogDate, editingEvent.id)
+      await deleteEvent(eventDialogDate, editingEvent.id)
       closeEventDialog()
       toast('Event deleted', {
         action: {
           label: 'Undo',
-          onClick: () => {
-            const restored = undoDelete()
+          onClick: async () => {
+            const restored = await undoDelete()
             if (restored) {
               toast.success('Event restored')
             }
@@ -606,9 +602,9 @@ export function EventDialog() {
                             size="sm"
                             className="h-8"
                             disabled={!newTagName.trim()}
-                            onClick={() => {
+                            onClick={async () => {
                               if (newTagName.trim()) {
-                                const newId = addTag({ name: newTagName.trim(), color: newTagColor })
+                                const newId = await addTag({ name: newTagName.trim(), color: newTagColor })
                                 setSelectedTags([...selectedTags, newId])
                                 setNewTagName('')
                                 setShowNewTagForm(false)

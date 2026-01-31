@@ -70,13 +70,13 @@ export const DayCard = memo(
       openEventDialog(eventDate, eventId)
     }
 
-    const handleDeleteEvent = (eventId: string, eventDate: string) => {
-      deleteEvent(eventDate, eventId)
+    const handleDeleteEvent = async (eventId: string, eventDate: string) => {
+      await deleteEvent(eventDate, eventId)
       toast('Event deleted', {
         action: {
           label: 'Undo',
-          onClick: () => {
-            const restored = undoDelete()
+          onClick: async () => {
+            const restored = await undoDelete()
             if (restored) {
               toast.success('Event restored')
             }
@@ -89,8 +89,8 @@ export const DayCard = memo(
       openRecurringEventDialog(eventId)
     }
 
-    const handleDeleteRecurringEvent = (eventId: string) => {
-      deleteRecurringEvent(eventId)
+    const handleDeleteRecurringEvent = async (eventId: string) => {
+      await deleteRecurringEvent(eventId)
       toast.success('Recurring event deleted')
     }
 
@@ -109,15 +109,13 @@ export const DayCard = memo(
       setDropTarget(null)
     }, [setDropTarget])
 
-    const handleDrop = useCallback((e: React.DragEvent) => {
+    const handleDrop = useCallback(async (e: React.DragEvent) => {
       e.preventDefault()
       setIsDragOver(false)
-      
       if (draggedEvent && draggedEvent.fromDate !== date) {
-        moveEvent(draggedEvent.fromDate, date, draggedEvent.eventId)
+        await moveEvent(draggedEvent.fromDate, date, draggedEvent.eventId)
         toast.success('Event moved')
       }
-      
       endDrag()
     }, [draggedEvent, date, moveEvent, endDrag])
 

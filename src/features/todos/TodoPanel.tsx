@@ -35,11 +35,10 @@ export function TodoPanel() {
   }, [isTodoPanelOpen, closeTodoPanel])
 
   const handleAddTodo = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault()
       if (!newTodoInput.trim()) return
-
-      addTodo(newTodoInput.trim())
+      await addTodo(newTodoInput.trim())
       setNewTodoInput('')
       toast.success('Todo added')
     },
@@ -47,20 +46,20 @@ export function TodoPanel() {
   )
 
   const handleDeleteTodo = useCallback(
-    (id: string) => {
-      deleteTodo(id)
+    async (id: string) => {
+      await deleteTodo(id)
       toast.success('Todo deleted')
     },
     [deleteTodo]
   )
 
-  const handleClearCompleted = useCallback(() => {
+  const handleClearCompleted = useCallback(async () => {
     const completedCount = todos.filter((t) => t.completed).length
     if (completedCount === 0) {
       toast.error('No completed todos to clear')
       return
     }
-    clearCompleted()
+    await clearCompleted()
     toast.success(`Cleared ${completedCount} completed todo${completedCount !== 1 ? 's' : ''}`)
   }, [todos, clearCompleted])
 
@@ -146,7 +145,7 @@ export function TodoPanel() {
                             className="group flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                           >
                             <button
-                              onClick={() => toggleTodo(todo.id)}
+                              onClick={async () => await toggleTodo(todo.id)}
                               className={cn(
                                 'h-5 w-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all',
                                 'border-border hover:border-foreground'
@@ -195,7 +194,7 @@ export function TodoPanel() {
                               className="group flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                             >
                               <button
-                                onClick={() => toggleTodo(todo.id)}
+                                onClick={async () => await toggleTodo(todo.id)}
                                 className={cn(
                                   'h-5 w-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all',
                                   'border-foreground bg-foreground text-background'

@@ -187,13 +187,11 @@ export function QuickAdd() {
   }, [isSearchOpen])
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault()
-
       if (!value.trim()) return
-
       const today = getTodayString()
-      addEvent(today, { title: value.trim() })
+      await addEvent(today, { title: value.trim() })
       setValue('')
       toast.success('Event added to today')
       navigateToToday()

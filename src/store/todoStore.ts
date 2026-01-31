@@ -1,77 +1,65 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import type { Todo } from '@/types'
-
-/**
- * Generate a unique ID for todos
- */
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-}
+import * as api from '@/api/dataLayer'
 
 interface TodoState {
-  // List of todos
   todos: Todo[]
-  
-  // Actions
-  addTodo: (title: string) => string
-  toggleTodo: (id: string) => void
-  deleteTodo: (id: string) => void
-  updateTodo: (id: string, title: string) => void
-  clearCompleted: () => void
+  _hydrated: boolean
+
+  hydrate: () => Promise<void>
+
+  addTodo: (title: string) => Promise<string>
+  toggleTodo: (id: string) => Promise<void>
+  deleteTodo: (id: string) => Promise<void>
+  updateTodo: (id: string, title: string) => Promise<void>
+  clearCompleted: () => Promise<void>
 }
 
-export const useTodoStore = create<TodoState>()(
-  persist(
-    (set) => ({
-      todos: [],
+export const useTodoStore = create<TodoState>()((set, get) => ({
+  todos: [],
+  _hydrated: false,
 
-      addTodo: (title) => {
-        const id = generateId()
-        const newTodo: Todo = {
-          id,
-          title,
-          completed: false,
-          createdAt: new Date().toISOString(),
-        }
+  hydrate: async () => {
+    const todos = await api.getTodoState()
+    set({ todos, _hydrated: true })
+  },
 
-        set((state) => ({
-          todos: [newTodo, ...state.todos],
-        }))
+  addTodo: async (title) => {
+    const todo = await api.addTodo({ title, completed: false })
+    set((state) => ({ todos: [todo, ...state.todos] }))
+    return todo.id
+  },
 
-        return id
-      },
+  toggleTodo: async (id) => {
+    const list = get().todos
+    const todo = list.find((t) => t.id === id)
+    if (!todo) return
+    const updated = await api.updateTodo(id, { completed: !todo.completed })
+    if (!updated) return
+    set((state) => ({
+      todos: state.todos.map((t) => (t.id === id ? updated : t)),
+    }))
+  },
 
-      toggleTodo: (id) => {
-        set((state) => ({
-          todos: state.todos.map((todo) =>
-            todo.id === id ? { ...todo, completed: !todo.completed } : todo
-          ),
-        }))
-      },
+  deleteTodo: async (id) => {
+    await api.deleteTodo(id)
+    set((state) => ({ todos: state.todos.filter((t) => t.id !== id) }))
+  },
 
-      deleteTodo: (id) => {
-        set((state) => ({
-          todos: state.todos.filter((todo) => todo.id !== id),
-        }))
-      },
+  updateTodo: async (id, title) => {
+    const updated = await api.updateTodo(id, { title })
+    if (!updated) return
+    set((state) => ({
+      todos: state.todos.map((t) => (t.id === id ? updated : t)),
+    }))
+  },
 
-      updateTodo: (id, title) => {
-        set((state) => ({
-          todos: state.todos.map((todo) =>
-            todo.id === id ? { ...todo, title } : todo
-          ),
-        }))
-      },
-
-      clearCompleted: () => {
-        set((state) => ({
-          todos: state.todos.filter((todo) => !todo.completed),
-        }))
-      },
-    }),
-    {
-      name: 'interval-todo-storage',
+  clearCompleted: async () => {
+    const list = get().todos
+    const completed = list.filter((t) => t.completed)
+    for (const t of completed) {
+      await api.deleteTodo(t.id)
     }
-  )
-)
+    set((state) => ({ todos: state.todos.filter((t) => !t.completed) }))
+  },
+}))

@@ -11,11 +11,21 @@ import { TodoPanel } from '@/features/todos'
 import { TodayWidget } from '@/features/today'
 import { useUIStore } from '@/store/uiStore'
 import { useTimelineStore } from '@/store/timelineStore'
+import { useTodoStore } from '@/store/todoStore'
 import { startNotificationScheduler, stopNotificationScheduler, getNotificationPermission } from '@/utils/notifications'
 
 function App() {
   const viewMode = useUIStore((state) => state.viewMode)
   const theme = useUIStore((state) => state.theme)
+
+  // Hydrate stores from API layer (localStorage for now) on mount
+  useEffect(() => {
+    const run = async () => {
+      await useTimelineStore.getState().hydrate()
+      await useTodoStore.getState().hydrate()
+    }
+    run()
+  }, [])
   
   // Get store functions directly - these are stable references
   const getRecurringEventsForDate = useTimelineStore((state) => state.getRecurringEventsForDate)

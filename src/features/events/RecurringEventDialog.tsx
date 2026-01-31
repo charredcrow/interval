@@ -123,7 +123,7 @@ export function RecurringEventDialog() {
   }, [clearFieldError])
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault()
       const errors: Record<string, string> = {}
 
@@ -145,8 +145,7 @@ export function RecurringEventDialog() {
 
       try {
         if (editingRecurringEventId) {
-          // Update existing recurring event
-          updateRecurringEvent(editingRecurringEventId, {
+          await updateRecurringEvent(editingRecurringEventId, {
             title: title.trim(),
             time: time || undefined,
             endTime: endTime || undefined,
@@ -157,8 +156,7 @@ export function RecurringEventDialog() {
           })
           toast.success('Recurring event updated')
         } else {
-          // Create new recurring event
-          addRecurringEvent({
+          await addRecurringEvent({
             title: title.trim(),
             time: time || undefined,
             endTime: endTime || undefined,
@@ -169,7 +167,6 @@ export function RecurringEventDialog() {
           })
           toast.success('Recurring event added')
         }
-
         closeRecurringEventDialog()
       } catch {
         toast.error('Failed to save recurring event')
@@ -201,9 +198,9 @@ export function RecurringEventDialog() {
     [closeRecurringEventDialog]
   )
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (editingRecurringEventId) {
-      deleteRecurringEvent(editingRecurringEventId)
+      await deleteRecurringEvent(editingRecurringEventId)
       closeRecurringEventDialog()
       toast.success('Recurring event deleted')
     }
